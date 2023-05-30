@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1000392128370",
+    "project_id": "on-time-3c0ed",
+    "storage_bucket": "on-time-3c0ed.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1000392128370:android:5bfb5b16e94f1b60ff4feb",
+        "android_client_info": {
+          "package_name": "com.on_time"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1000392128370-ssv4mcirinri7ntr487v7afh9mvrcit7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyByp9qQYpafy2UUX5ZaFtvD2bKkOUwxlYw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1000392128370-ssv4mcirinri7ntr487v7afh9mvrcit7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1000392128370-k2ofeut1rgl5davr24gln8begidkbc6t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.on.time.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
