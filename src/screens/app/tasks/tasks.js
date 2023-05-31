@@ -56,10 +56,11 @@ type Item = {
   backgroundColor: string;
 };
 const Tasks = props => {
-  var data = props?.route?.params?.data;
+  var data1 = props?.route?.params?.data;
   let row: Array<any> = [];
   let prevOpenedRow;
   const itemRefs = useRef(new Map());
+  const [data, setData] = useState(data1);
   const [selectedId, setSelectedId] = useState(null);
   const [visiblity, setVisiblity] = useState(false);
   const [count, setCount] = useState(-1);
@@ -147,7 +148,7 @@ const Tasks = props => {
       });
     });
     let list1 = await appFBS.getData('tasks', true, 'scheduleId', '==', data.id);
-    let start_time = moment().format('HH:mm a');
+    let start_time = moment(`${data.startHour}:${data.startMin} ${data.AMPM}`,"hh:mm a").format('HH:mm a');
     let allList = [];
     list1?.map((ele, index) => {
       if (ele.status == 'incomplete') {
@@ -211,6 +212,7 @@ const Tasks = props => {
     } else if (hour > 0 && minut == 0) {
       setscheduleTotalTime(hour + 'h:' + '00m');
     }
+    
     sethoursAndMinutes({ ...hoursAndMinutes, hours: hour, minutes: minut });
   };
   async function onResult(QuerySnapshot) {
@@ -220,6 +222,13 @@ const Tasks = props => {
     });
   }
   const setStartTime = async () => {
+    let newData={
+      ...data,
+      startHour:moment().format('hh'),
+      startMin:moment().format('mm'),
+
+    }
+    setData(newData)
     const tSeconds = allTaskList[0].totalSeconds;
     // console.log('trueeeee...',tSeconds +',,,,,,'+ dummpSeconds)
     if (tSeconds !== dummpSeconds) {
@@ -230,6 +239,7 @@ const Tasks = props => {
       }
     } else {
       let allList = [];
+     
       let start_time = moment().format('HH:mm a');
       allTaskList.map((item, index) => {
         let obj = {};
@@ -253,14 +263,15 @@ const Tasks = props => {
         setisPlaying(!isPlaying);
         setTaskStartTime(false);
       });
+     
     }
 
   }
-  const getTasks = async () => {
+  const getTasks = async (addStartTime,time) => {
     let list = await appFBS.getData('tasks', true, 'scheduleId', '==', data.id);
     // let start_time = data?.time;
     // let firstime = moment().format('HH:mm a');
-    let start_time = moment().format('HH:mm a');
+    let start_time =addStartTime?time: moment(`${data.startHour}:${data.startMin} ${data.AMPM}`,"hh:mm a").format('HH:mm a');
     let completeList = [];
     let incompleteList = [];
     let allList = [];
@@ -285,7 +296,6 @@ const Tasks = props => {
         completeList.push(ele);
       }
     });
-
     const sorted = allList.sort((a, b) => (a.status > b.status) ? -1 : 1);
     if (sorted !== undefined && sorted.length > 0) {
       const { totalSeconds } = sorted[0];
@@ -332,7 +342,7 @@ const Tasks = props => {
         await appFBS.updateData(allTaskList[0].id, 'tasks', {
           status: 'completed',
         });
-        setmoveToNextTaskVisibility(true);
+        // setmoveToNextTaskVisibility(true);
         // let start_time = moment().format('HH:mm a');
         // let allList = [];
         // let list = await appFBS.getData('tasks', true, 'scheduleId', '==', data.id);
@@ -470,7 +480,7 @@ const Tasks = props => {
                     }}>
                     <Text style={styles.bottonTimerText}>
                       Ends @ {''}
-                      {moment()
+                      {moment(item?.startTime,"hh:mm a")
                         .add(item?.duration?.hours * 60 + item?.duration?.minutes, 'minute')
                         .format('hh:mm A')}
                     </Text>
@@ -591,6 +601,7 @@ const Tasks = props => {
       setscheduleTotalTime(hour + 'h:' + '00m');
     }
     sethoursAndMinutes({ ...hoursAndMinutes, hours: hour, minutes: minut });
+   
   };
   const renderCompletedItem = item => {
     return (
@@ -636,6 +647,22 @@ const Tasks = props => {
       <View style={styles.qaContainer}>
         <TouchableOpacity
           onPress={() => {
+            updateStatus(item)
+            setExtendTime(-1);
+            setRiseTime(-1);
+            setdummpSeconds(0);
+            setCount(-1);
+            setisPlaying(false);
+          }}>
+          <View style={[styles.button, styles.button4]}>
+
+            <Text style={[styles.buttonText]}>Skip</Text>
+
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            setcurrentOnGoingTask(item);
             // updateState(item)
             // setExtendTime(-1);
             // setRiseTime(-1);
@@ -700,7 +727,7 @@ const Tasks = props => {
         endTime={
           totalDuration == 0
             ? '00:00'
-            : moment()
+            : moment(`${data.startHour}:${data.startMin} ${data.AMPM}`,"hh:mm a")
               .add(hoursAndMinutes, 'minute')
               .format('hh:mm A')
         }
@@ -745,7 +772,7 @@ const Tasks = props => {
             </View>
           )}
           <TouchableOpacity
-            onPress={() => currentOnGoingTask.status === 'incomplete' ? setStartTime() : toastServices.showToast('No task available')}
+            onPress={() => currentOnGoingTask.status === 'incomplete' ? setStartTime(moment().format("hh:mma")) : toastServices.showToast('No task available')}
             style={styles.playPauseButtonContainer}>
             {isPlaying ? (
               <Icon

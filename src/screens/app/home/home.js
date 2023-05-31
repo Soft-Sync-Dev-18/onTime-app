@@ -40,7 +40,17 @@ const Home = props => {
   const renderItem = item => {
     return (
       <TouchableOpacity
-        onPress={() => props.navigation.navigate('Tasks', {data: item})}
+        onPress={() => {
+          
+          let startTimeSplit=item.time.split(":")
+          let startHour=startTimeSplit[0].trim()
+          let MinSplit=startTimeSplit[1].split(" ")
+          let startMin=MinSplit[0].trim()
+          let AMPM=MinSplit[1].trim()
+          console.log(startHour,startMin,MinSplit[1].trim())
+          let startTIme=new Date()
+          props.navigation.navigate('Tasks', {data: {...item,startHour,startMin,AMPM}})
+        }}
         style={styles.itemContainer}
         activeOpacity={1}>
         <Text style={styles.itemNameText}>{item.name}</Text>

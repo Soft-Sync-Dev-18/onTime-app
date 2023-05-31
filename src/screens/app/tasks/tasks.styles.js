@@ -216,6 +216,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: responsiveWidth(2),
   },
+  button4: {
+    backgroundColor: colors.bloodOrange,
+    marginRight: responsiveWidth(1),
+  },
   button2: {
     backgroundColor: colors.facebook,
     marginRight: responsiveWidth(1),

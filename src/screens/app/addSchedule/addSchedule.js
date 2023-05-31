@@ -94,7 +94,7 @@ const AddSchedule = props => {
       <TouchableOpacity
         onPress={() => {
           setNewTime(null);
-          setcurrentTime(moment().format('LT'));
+          setcurrentTime(moment().format('hh:mm a'));
         }}
         style={{...styles.startTimeButtons, marginTop: 5}}>
         <Text style={styles.text}>
