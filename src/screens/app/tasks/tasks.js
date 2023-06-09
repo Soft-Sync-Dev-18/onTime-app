@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   StatusBar,
@@ -8,31 +8,38 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-} from 'react-native';
-import styles from './tasks.styles';
-import DraggableFlatList from 'react-native-draggable-flatlist'
-import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { Icon } from 'react-native-elements';
-import BackgroundTimer from 'react-native-background-timer';
+} from "react-native";
+import styles from "./tasks.styles";
+import DraggableFlatList from "react-native-draggable-flatlist";
+import Swipeable from "react-native-gesture-handler/Swipeable";
+import { Icon } from "react-native-elements";
+import BackgroundTimer from "react-native-background-timer";
 import {
   responsiveFontSize,
   responsiveHeight,
   responsiveWidth,
-} from 'react-native-responsive-dimensions';
-import NotificationSounds, { playSampleSound } from 'react-native-notification-sounds';
-import DeleteConfirmationModal from '../../../components/modals/deleteConfirmation/deleteConfirmation';
-import { AppColor, appImages, colors } from '../../../globals/utilities';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import firestore from '@react-native-firebase/firestore';
-import { appFBS } from '../../../services/firebaseServices/firebaseServices';
-import toastServices from '../../../services/toastServices/toast.services';
-import moment from 'moment';
-import TaskHeader from '../../../components/general/taskHeader/taskHeader';
-import * as Progress from 'react-native-progress';
-import LastTask from '../../../components/modals/lastTask/lastTask';
-import MoveToNewTask from '../../../components/modals/moveToNewTask/moveToNewTask';
-import OvertimeTask from '../../../components/modals/moveToNewTask/overtimeTask';
-import ResetConfirmation from '../../../components/modals/deleteConfirmation/resetConfirmation';
+} from "react-native-responsive-dimensions";
+import NotificationSounds, {
+  playSampleSound,
+} from "react-native-notification-sounds";
+import DeleteConfirmationModal from "../../../components/modals/deleteConfirmation/deleteConfirmation";
+import { AppColor, appImages, colors } from "../../../globals/utilities";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import firestore from "@react-native-firebase/firestore";
+import { appFBS } from "../../../services/firebaseServices/firebaseServices";
+import toastServices from "../../../services/toastServices/toast.services";
+import moment from "moment";
+import TaskHeader from "../../../components/general/taskHeader/taskHeader";
+import * as Progress from "react-native-progress";
+import LastTask from "../../../components/modals/lastTask/lastTask";
+import MoveToNewTask from "../../../components/modals/moveToNewTask/moveToNewTask";
+import OvertimeTask from "../../../components/modals/moveToNewTask/overtimeTask";
+import ResetConfirmation from "../../../components/modals/deleteConfirmation/resetConfirmation";
+import { HeadlessJsTask } from "react-native-background-fetch";
+import { Notifications } from "react-native-notifications";
+import { useSelector, useDispatch } from "react-redux";
+import _BackgroundTimer from "react-native-background-timer";
+import { setTaskTimer, taskTimerFn } from "../../../store/actions";
 const NUM_ITEMS = 10;
 
 function getColor(i: number) {
@@ -51,14 +58,15 @@ const exampleData: Item[] = [...Array(20)].map((d, index) => {
 });
 
 type Item = {
-  key: string;
-  label: string;
-  backgroundColor: string;
+  key: string,
+  label: string,
+  backgroundColor: string,
 };
-const Tasks = props => {
+const Tasks = (props) => {
   var data1 = props?.route?.params?.data;
   let row: Array<any> = [];
   let prevOpenedRow;
+  const dispatch = useDispatch();
   const itemRefs = useRef(new Map());
   const [data, setData] = useState(data1);
   const [selectedId, setSelectedId] = useState(null);
@@ -70,11 +78,11 @@ const Tasks = props => {
   const [resetModal, setResetModal] = useState(false);
   const [selectedTask, setselectedTask] = useState();
   const [nextTaskmodalValues, setnextTaskmodalValues] = useState({
-    CurrentTaskName: '',
-    NextTaskName: '',
+    CurrentTaskName: "",
+    NextTaskName: "",
   });
   const [isPlaying, setisPlaying] = useState(false);
-  const [scheduleTotalTime, setscheduleTotalTime] = useState('');
+  const [scheduleTotalTime, setscheduleTotalTime] = useState("");
   const [totalDuration, setTotalDuration] = useState(1);
   const [defaultColor, setdefaultColor] = useState(colors.gray600);
   const [lastTaskId, setlastTaskId] = useState(null);
@@ -87,45 +95,225 @@ const Tasks = props => {
     minutes: 0,
   });
   const [lastTasVisibility, setlastTasVisibility] = useState(false);
+  const [getTime, setGetTime] = useState(false);
   const [moveToNextTaskVisibility, setmoveToNextTaskVisibility] =
     useState(false);
   const [extendTimeVisibility, setExtendTimeVisibility] = useState(false);
+  const taskTimer = useSelector((state) => state?.state?.taskTimer);
+  // useEffect(() => {
+  //   console.log(taskTimer, "taskTimer");
+  // }, []);
+  // useEffect(() => {
+  //   if (taskTimer?.isPlaying && !getTime && currentOnGoingTask !== {}) {
+  //     setGetTime(true);
+  //   }
+  // }, [taskTimer?.isPlaying]);
+  // useEffect(() => {
+  //   if (taskTimer?.isPlaying && getTime) {
+  //     console.log(taskTimer, "taskTimer,taskTimer,taskTimers");
+  //     setdefaultColor(taskTimer.defaultColor);
+  //     setExtendTime(taskTimer.extendTime);
+  //     setRiseTime(taskTimer.riseSeconds);
+  //     setdummpSeconds(taskTimer.dummpSeconds);
+  //     setisPlaying(taskTimer.isPlaying);
+  //     if (taskTimer.ExtendTimeVisibility) {
+  //       dispatch(
+  //         setTaskTimer({
+  //           ...taskTimer,
+  //           ExtendTimeVisibility: false,
+  //         })
+  //       );
+  //       setExtendTimeVisibility(false);
+  //     }
+  //   }
+  // }, [
+  //   taskTimer,
+  //   taskTimer?.dummpSeconds,
+  //   taskTimer?.isPlaying,
+  //   taskTimer?.extendTime,
+  //   getTime,
+  //   isPlaying,
+  // ]);
+  // useEffect(() => {
+  //   if (currentOnGoingTask !== {}) {
+  //     if (isPlaying) {
+  //       console.log(
+  //         currentOnGoingTask,
+  //         taskTimer,
+  //         "currentOnGoingTask, taskTimer"
+  //       );
+  //       let totalSeconds =
+  //         currentOnGoingTask?.durationRemaining?.seconds +
+  //         currentOnGoingTask?.durationRemaining?.minutes * 60 +
+  //         currentOnGoingTask?.durationRemaining?.hours * 60 * 60;
+  //       let newTimes = currentOnGoingTask?.durationRemaining?.extraTime
+  //         ? { extendTime: extendTime }
+  //         : { dummpSeconds: totalSeconds, riseSeconds: riseSeconds };
+  //       dispatch(
+  //         taskTimerFn(currentOnGoingTask, {
+  //           ...taskTimer,
+  //           ...newTimes,
+  //         })
+  //       );
+  //     }
+  //   }
+  // }, [isPlaying]);
+  // useEffect(() => {
+  //   if (currentOnGoingTask !== {}) {
+  //     // console.log(taskTimer, "taskTimer");
+  //     let obj = taskTimer;
+  //     // console.log(obj, "obj");
+  //     if (currentOnGoingTask?.startTimer) {
+  //       // setisPlaying(currentOnGoingTask?.startTimer);
+  //       obj.isPlaying = currentOnGoingTask?.startTimer;
+  //     }
+  //     if (currentOnGoingTask?.durationRemaining?.extraTime) {
+  //       // console.log(
+  //       //   currentOnGoingTask,
+  //       //   "currentOnGoingTaskcurrentOnGoingTaskcurrentOnGoingTask"
+  //       // );
+  //       obj.extendTime =
+  //         currentOnGoingTask?.durationRemaining?.seconds +
+  //         currentOnGoingTask?.durationRemaining?.minutes * 60 +
+  //         currentOnGoingTask?.durationRemaining?.hours * 60 * 60;
 
-
+  //       // setExtendTime(
+  //       //   currentOnGoingTask?.seconds +
+  //       //     currentOnGoingTask?.minutes * 60 +
+  //       //     currentOnGoingTask?.hours * 60 * 60
+  //       // );
+  //       // console.log(
+  //       //   currentOnGoingTask?.seconds +
+  //       //     currentOnGoingTask?.minutes * 60 +
+  //       //     currentOnGoingTask?.hours * 60 * 60,
+  //       //   "ssssssssssse"
+  //       // );
+  //     }
+  //     if (taskTimer !== obj) {
+  //       dispatch(
+  //         setTaskTimer({
+  //           ...obj,
+  //         })
+  //       );
+  //     }
+  //   }
+  // }, [currentOnGoingTask]);
   useEffect(() => {
-    const timer = BackgroundTimer.setInterval(() => {
-      if (isPlaying && currentOnGoingTask.status === 'incomplete') {
-        if (extendTime > 0) {
-          setExtendTime(extendTime + 1);
-          setdefaultColor(colors.gray600);
-        } else {
-          if (dummpSeconds !== undefined) {
-            setdummpSeconds(dummpSeconds - 1);
-            setRiseTime(riseSeconds + 1);
-            if (dummpSeconds === 1) {
-              NotificationSounds.getNotifications('notification').then(soundsList => {
-               // console.warn('SOUNDS', JSON.stringify(soundsList));
-                if (soundsList.length !== 0) {
-                  playSampleSound(soundsList[1]);
-                }
-                // if you want to stop any playing sound just call:
-                // stopSampleSound();
-              });
-              setExtendTimeVisibility(true);
-              { count === -1 && setExtendTime(1); }
-
-            }
-          }
-          // setCount(0);
-        }
-      } else {
-        setisPlaying(false);
+    if (isPlaying) {
+      dispatch(
+        taskTimerFn(currentOnGoingTask, {
+          defaultColor: currentOnGoingTask?.color,
+          extendTime: extendTime,
+          riseSeconds: riseSeconds,
+          dummpSeconds: dummpSeconds,
+          ExtendTimeVisibility: false,
+          isPlaying: true,
+        })
+      );
+      setGetTime(!getTime);
+    } else {
+      console.log('pausseedddd')
+      dispatch(
+        taskTimerFn(currentOnGoingTask, {
+          defaultColor: currentOnGoingTask?.color,
+          extendTime: extendTime,
+          riseSeconds: riseSeconds,
+          dummpSeconds: dummpSeconds,
+          ExtendTimeVisibility: false,
+          isPlaying: false,
+        })
+      );
+    }
+  }, [isPlaying]);
+  useEffect(() => {
+    if (taskTimer?.isPlaying && getTime && isPlaying) {
+      console.log(taskTimer, "taskTimer,taskTimer,taskTimers");
+      setdefaultColor(taskTimer.defaultColor);
+      setExtendTime(taskTimer.extendTime);
+      setRiseTime(taskTimer.riseSeconds);
+      setdummpSeconds(taskTimer.dummpSeconds);
+      setisPlaying(taskTimer.isPlaying);
+      if (taskTimer.ExtendTimeVisibility) {
+        dispatch(
+          setTaskTimer({
+            ...taskTimer,
+            ExtendTimeVisibility: false,
+          })
+        );
+        setExtendTimeVisibility(false);
       }
-    }, 1000);
-    return () => BackgroundTimer.clearInterval(timer);
-  });
+    }
+  }, [taskTimer, getTime, isPlaying]);
+  // useEffect(() => {
+  //   const timer = _BackgroundTimer.setInterval(() => {
+  //     if (isPlaying && currentOnGoingTask.status === "incomplete") {
+  //       if (extendTime > 0) {
+  //         // console.log(extendTime, "extendTime");
+  //         let val = setExtendTime(extendTime + 1);
+  //         setdefaultColor(colors.gray600);
+  //         if (extendTime % 300 === 0) {
+  //           // console.log(extendTime);
+  //           const notification = {
+  //             title: "Hello",
+  //             body: "This is a notification from React Native",
+  //           };
+
+  //           // Send the notification
+  //           Notifications.postLocalNotification(notification);
+
+  //           NotificationSounds.getNotifications("notification").then(
+  //             (soundsList) => {
+  //               console.log("SOUNDS", JSON.stringify(soundsList));
+  //               if (soundsList.length !== 0) {
+  //                 playSampleSound(soundsList[1]);
+  //               } else {
+  //                 console.log(
+  //                   "if you want to stop any playing sound just call"
+  //                 );
+  //               }
+  //               // if you want to stop any playing sound just call:
+  //               // stopSampleSound();
+  //             }
+  //           );
+  //         }
+  //       } else {
+  //         if (dummpSeconds !== undefined) {
+  //           setdummpSeconds(dummpSeconds - 1);
+  //           setRiseTime(riseSeconds + 1);
+  //           if (dummpSeconds === 1) {
+  //             const notification = {
+  //               title: "Hello",
+  //               body: "This is a notification from React Native",
+  //             };
+
+  //             // Send the notification
+  //             Notifications.postLocalNotification(notification);
+  //             NotificationSounds.getNotifications("notification").then(
+  //               (soundsList) => {
+  //                 // console.warn('SOUNDS', JSON.stringify(soundsList));
+  //                 if (soundsList.length !== 0) {
+  //                   playSampleSound(soundsList[1]);
+  //                 }
+  //                 // if you want to stop any playing sound just call:
+  //                 // stopSampleSound();
+  //               }
+  //             );
+  //             setExtendTimeVisibility(true);
+  //             {
+  //               count === -1 && setExtendTime(1);
+  //             }
+  //           }
+  //         }
+  //         // setCount(0);
+  //       }
+  //     } else {
+  //       setisPlaying(false);
+  //     }
+  //   }, 1000);
+  //   return () => _BackgroundTimer.clearInterval(timer);
+  // });
   useEffect(() => {
-    firestore().collection('tasks').onSnapshot(onResult);
+    firestore().collection("tasks").onSnapshot(onResult);
   }, []);
 
   useEffect(() => {
@@ -135,27 +323,35 @@ const Tasks = props => {
     }, 4000);
   }, []);
 
-
   const resetAllTasks = async () => {
     setExtendTime(0);
     setRiseTime(0);
     setCount(-1);
     setisPlaying(false);
-    let list = await appFBS.getData('tasks', true, 'scheduleId', '==', data.id);
+    let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
     list?.map(async (ele, index) => {
-      await appFBS.updateData(ele.id, 'tasks', {
-        status: 'incomplete',
+      await appFBS.updateData(ele.id, "tasks", {
+        status: "incomplete",
       });
     });
-    let list1 = await appFBS.getData('tasks', true, 'scheduleId', '==', data.id);
-    let start_time = moment(`${data.startHour}:${data.startMin} ${data.AMPM}`,"hh:mm a").format('HH:mm a');
+    let list1 = await appFBS.getData(
+      "tasks",
+      true,
+      "scheduleId",
+      "==",
+      data.id
+    );
+    let start_time = moment(
+      `${data.startHour}:${data.startMin} ${data.AMPM}`,
+      "hh:mm a"
+    ).format("HH:mm a");
     let allList = [];
     list1?.map((ele, index) => {
-      if (ele.status == 'incomplete') {
+      if (ele.status == "incomplete") {
         let obj = {};
-        start_time = moment(start_time, 'HH:mma')
-          .add(ele?.duration?.hours * 60 + ele?.duration?.minutes, 'minute')
-          .format('hh:mm A');
+        start_time = moment(start_time, "HH:mma")
+          .add(ele?.duration?.hours * 60 + ele?.duration?.minutes, "minute")
+          .format("hh:mm A");
         let totalSeconds =
           ele?.duration?.hours * 3600 + ele?.duration?.minutes * 60;
         obj = { ...ele, startTime: start_time, totalSeconds: totalSeconds };
@@ -164,7 +360,7 @@ const Tasks = props => {
         allList.push(ele);
       }
       // console.log('checking', allList);
-      const sorted = allList.sort((a, b) => (a.status > b.status) ? -1 : 1);
+      const sorted = allList.sort((a, b) => (a.status > b.status ? -1 : 1));
 
       if (sorted !== undefined && sorted.length > 0) {
         const { totalSeconds } = sorted[0];
@@ -177,24 +373,27 @@ const Tasks = props => {
         setnextTaskmodalValues({
           ...nextTaskmodalValues,
           CurrentTaskName: sorted[0].taskName,
-          NextTaskName: (sorted[1] !== undefined && sorted[1].status !== 'completed') ? sorted[1].taskName : 'finished',
+          NextTaskName:
+            sorted[1] !== undefined && sorted[1].status !== "completed"
+              ? sorted[1].taskName
+              : "finished",
         });
       }
       setResetModal(false);
     });
     // setResetModal(false);
-  }
+  };
 
   const calculateTotalTime = async (allTaskList) => {
     let hour = 0;
     let minut = 0;
-    allTaskList.map(item => {
-      if (item?.status === 'incomplete') {
+    allTaskList.map((item) => {
+      if (item?.status === "incomplete") {
         hour = hour + item?.duration?.hours;
       }
     });
-    allTaskList.map(item => {
-      if (item?.status === 'incomplete') {
+    allTaskList.map((item) => {
+      if (item?.status === "incomplete") {
         minut = minut + item?.duration?.minutes;
         if (minut >= 60) {
           minut = minut - 60;
@@ -206,31 +405,62 @@ const Tasks = props => {
     if (hour == 0 && minut == 0) {
       setscheduleTotalTime(0);
     } else if (hour > 0 && minut > 0) {
-      setscheduleTotalTime(hour + 'h:' + minut + 'm');
+      setscheduleTotalTime(hour + "h:" + minut + "m");
     } else if (hour == 0 && minut > 0) {
-      setscheduleTotalTime('0h' + ':' + minut + 'm');
+      setscheduleTotalTime("0h" + ":" + minut + "m");
     } else if (hour > 0 && minut == 0) {
-      setscheduleTotalTime(hour + 'h:' + '00m');
+      setscheduleTotalTime(hour + "h:" + "00m");
     }
-    
+
     sethoursAndMinutes({ ...hoursAndMinutes, hours: hour, minutes: minut });
   };
   async function onResult(QuerySnapshot) {
     let changes = QuerySnapshot.docChanges();
-    changes.forEach(element => {
+    changes.forEach((element) => {
       getTasks();
     });
   }
+  const getMinutes = (time) => {
+    return Math.trunc(time / 3600) * 60 - Math.trunc(time / 60) > 9
+      ? Math.trunc(time / 3600) !== 0
+        ? Math.trunc(time / 60) - Math.trunc(time / 3600) * 60
+        : Math.trunc(time / 60)
+      : Math.trunc(time / 3600) !== 0
+      ? Math.trunc(time / 60) - Math.trunc(time / 3600) * 60
+      : Math.trunc(time / 60);
+  };
   const setStartTime = async () => {
-    let newData={
+    let newData = {
       ...data,
-      startHour:moment().format('hh'),
-      startMin:moment().format('mm'),
-
-    }
-    setData(newData)
+      startHour: moment().format("hh"),
+      startMin: moment().format("mm"),
+    };
+    setData(newData);
     const tSeconds = allTaskList[0].totalSeconds;
-    // console.log('trueeeee...',tSeconds +',,,,,,'+ dummpSeconds)
+    if (!isPlaying) {
+      await appFBS.updateData(currentOnGoingTask.id, "tasks", {
+        startTimer: !isPlaying,
+      });
+    } else {
+      await appFBS.updateData(currentOnGoingTask.id, "tasks", {
+        startTimer: !isPlaying,
+        durationRemaining: {
+          totalDuration: currentOnGoingTask?.durationRemaining?.totalDuration,
+          hours:
+            extendTime > 0
+              ? Math.trunc(extendTime / 3600)
+              : Math.trunc(dummpSeconds / 3600),
+          minutes:
+            extendTime > 0 ? getMinutes(extendTime) : getMinutes(dummpSeconds),
+          seconds:
+            extendTime > 0
+              ? Math.trunc(extendTime % 60)
+              : Math.trunc(dummpSeconds % 60),
+          extraTime: extendTime > 0 ? true : false,
+        },
+      });
+    }
+    // console.log(currentOnGoingTask, "currentOnGoingTask");
     if (tSeconds !== dummpSeconds) {
       setTaskStartTime(false);
       setisPlaying(!isPlaying);
@@ -239,17 +469,20 @@ const Tasks = props => {
       }
     } else {
       let allList = [];
-     
-      let start_time = moment().format('HH:mm a');
+
+      let start_time = moment().format("HH:mm a");
       allTaskList.map((item, index) => {
         let obj = {};
-        if (item?.status === 'incomplete') {
+        if (item?.status === "incomplete") {
           if (index === 0) {
-            start_time = moment(start_time, 'HH:mma').format('hh:mm A');
+            start_time = moment(start_time, "HH:mma").format("hh:mm A");
           } else {
-            start_time = moment(start_time, 'HH:mma')
-              .add(item?.duration?.hours * 60 + item?.duration?.minutes, 'minute')
-              .format('hh:mm A');
+            start_time = moment(start_time, "HH:mma")
+              .add(
+                item?.duration?.hours * 60 + item?.duration?.minutes,
+                "minute"
+              )
+              .format("hh:mm A");
           }
           let totalSeconds =
             item?.duration?.hours * 3600 + item?.duration?.minutes * 60;
@@ -258,36 +491,47 @@ const Tasks = props => {
         } else {
           allList.push(item);
         }
+
         setallTaskList(allList);
         calculateTotalTime(allList);
         setisPlaying(!isPlaying);
         setTaskStartTime(false);
       });
-     
     }
-
-  }
-  const getTasks = async (addStartTime,time) => {
-    let list = await appFBS.getData('tasks', true, 'scheduleId', '==', data.id);
+  };
+  const getTasks = async (addStartTime, time) => {
+    let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
     // let start_time = data?.time;
     // let firstime = moment().format('HH:mm a');
-    let start_time =addStartTime?time: moment(`${data.startHour}:${data.startMin} ${data.AMPM}`,"hh:mm a").format('HH:mm a');
+    let start_time = addStartTime
+      ? time
+      : moment(
+          `${data.startHour}:${data.startMin} ${data.AMPM}`,
+          "hh:mm a"
+        ).format("HH:mm a");
     let completeList = [];
     let incompleteList = [];
     let allList = [];
     list?.map((ele, index) => {
-      if (ele.status == 'incomplete') {
+      // console.log(ele, "ele");
+      if (ele.status == "incomplete") {
         let obj = {};
         if (index === 0) {
-          start_time = moment(start_time, 'HH:mma').format('hh:mm A');
+          start_time = moment(start_time, "HH:mma").format("hh:mm A");
         } else {
-          start_time = moment(start_time, 'HH:mma')
-            .add(ele?.duration?.hours * 60 + ele?.duration?.minutes, 'minute')
-            .format('hh:mm A');
+          start_time = moment(start_time, "HH:mma")
+            .add(
+              ele?.durationRemaining?.hours * 60 +
+                ele?.durationRemaining?.minutes,
+              "minute"
+            )
+            .format("hh:mm A");
         }
 
         let totalSeconds =
-          ele?.duration?.hours * 3600 + ele?.duration?.minutes * 60;
+          ele?.durationRemaining?.hours * 3600 +
+          ele?.durationRemaining?.minutes * 60 +
+          (ele?.durationRemaining?.seconds % 60);
         obj = { ...ele, startTime: start_time, totalSeconds: totalSeconds };
         incompleteList.push(obj);
         allList.push(obj);
@@ -296,10 +540,10 @@ const Tasks = props => {
         completeList.push(ele);
       }
     });
-    const sorted = allList.sort((a, b) => (a.status > b.status) ? -1 : 1);
+    const sorted = allList.sort((a, b) => (a.status > b.status ? -1 : 1));
     if (sorted !== undefined && sorted.length > 0) {
       const { totalSeconds } = sorted[0];
-      console.log('checking', sorted);
+      // console.log("checking", sorted);
       if (totalSeconds !== undefined) {
         setdummpSeconds(totalSeconds);
         setTotalDuration(totalSeconds);
@@ -322,8 +566,7 @@ const Tasks = props => {
   };
 
   const updateStatus = async () => {
-
-    if (allTaskList.length > 0 && currentOnGoingTask.status === 'incomplete') {
+    if (allTaskList.length > 0 && currentOnGoingTask.status === "incomplete") {
       if (allTaskList.length == 1) {
         setlastTasVisibility(true);
       } else if (allTaskList.length > 1) {
@@ -334,13 +577,17 @@ const Tasks = props => {
         setnextTaskmodalValues({
           ...nextTaskmodalValues,
           CurrentTaskName: allTaskList[0].taskName,
-          NextTaskName: (allTaskList[1] !== undefined && allTaskList[1].status !== 'completed') ? allTaskList[1].taskName : 'finished',
+          NextTaskName:
+            allTaskList[1] !== undefined &&
+            allTaskList[1].status !== "completed"
+              ? allTaskList[1].taskName
+              : "finished",
         });
 
         setlastTaskId(allTaskList[0].id);
 
-        await appFBS.updateData(allTaskList[0].id, 'tasks', {
-          status: 'completed',
+        await appFBS.updateData(allTaskList[0].id, "tasks", {
+          status: "completed",
         });
         // setmoveToNextTaskVisibility(true);
         // let start_time = moment().format('HH:mm a');
@@ -377,17 +624,15 @@ const Tasks = props => {
         //   }
         //   // setResetModal(false);
         // });
-
-
       } else {
         // setisPlaying(false);
         setdefaultColor(colors.gray600);
-        toastServices.showToast('No task available');
+        toastServices.showToast("No task available");
       }
     }
   };
   const closeRow = (index) => {
-    console.log('closerow');
+    console.log("closerow");
     if (prevOpenedRow && prevOpenedRow !== row[index]) {
       prevOpenedRow.close();
     }
@@ -395,7 +640,6 @@ const Tasks = props => {
   };
 
   const renderItem = useCallback(
-
     ({ item, index, drag, isActive }: RenderItemParams<Item>) => {
       let now = 0;
       if (extendTime > 0) {
@@ -411,125 +655,152 @@ const Tasks = props => {
         }
       }
 
-
-      return (
-        item.status === 'completed' ?
-          <View>
-            <TouchableOpacity
+      return item.status === "completed" ? (
+        <View>
+          <TouchableOpacity
+            style={{
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onLongPress={drag}
+          >
+            <View
+              style={[
+                styles.innerContainer,
+                styles.compltedItem,
+                {
+                  backgroundColor: item.color,
+                  marginVertical: responsiveHeight(1),
+                },
+              ]}
+            >
+              <View style={styles.itemContainer}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.itemNameText, styles.compltedItemTitleText]}
+                >
+                  {item.taskName}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.itemDurationText.color,
+                    styles.compltedItemTitleText,
+                  ]}
+                >
+                  {item?.duration?.totalDuration}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <Swipeable
+          renderRightActions={(progress, dragX) =>
+            QuickActions(item, index, dragX)
+          }
+          ref={(ref) => (row[index] = ref)}
+          onSwipeableOpen={() => closeRow(index)}
+          rightOpenValue={-10}
+        >
+          <TouchableOpacity
+            style={{
+              // borderColor: isActive ? 'red' : null,
+              // borderWidth: isActive ? 2 : null,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onLongPress={drag}
+          >
+            <View
               style={{
-                alignItems: 'center',
-                justifyContent: 'center',
+                ...styles.itemTopContainer,
+                backgroundColor: item.color,
               }}
-              onLongPress={drag}>
+            >
               <View
-                style={[
-                  styles.innerContainer,
-                  styles.compltedItem,
-                  { backgroundColor: item.color, marginVertical: responsiveHeight(1) },
-                ]}>
+                style={{
+                  ...styles.innerContainer,
+                  backgroundColor: item.color,
+                }}
+              >
                 <View style={styles.itemContainer}>
-                  <Text
-                    numberOfLines={1}
-                    style={[styles.itemNameText, styles.compltedItemTitleText]}>
+                  <Text numberOfLines={1} style={styles.itemNameText}>
                     {item.taskName}
                   </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.itemDurationText.color,
-                      styles.compltedItemTitleText,
-                    ]}>
-                    {item?.duration?.totalDuration}
+                  <Text numberOfLines={1} style={styles.itemDurationText}>
+                    {item?.durationRemaining?.totalDuration}
                   </Text>
                 </View>
+                <Text style={styles.itemTimeText}>{item?.startTime}</Text>
               </View>
-            </TouchableOpacity>
-          </View> :
-          <Swipeable
-            renderRightActions={(progress, dragX) =>
-              QuickActions(item, index, dragX)
-            }
-            ref={(ref) => (row[index] = ref)}
-            onSwipeableOpen={() => closeRow(index)}
-            rightOpenValue={-10}>
-            <TouchableOpacity
-              style={{
-                // borderColor: isActive ? 'red' : null,
-                // borderWidth: isActive ? 2 : null,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onLongPress={drag}>
-              <View style={{ ...styles.itemTopContainer, backgroundColor: item.color }}>
-                <View style={{ ...styles.innerContainer, backgroundColor: item.color }}>
-                  <View style={styles.itemContainer}>
-                    <Text numberOfLines={1} style={styles.itemNameText}>
-                      {item.taskName}
-                    </Text>
-                    <Text numberOfLines={1} style={styles.itemDurationText}>
-                      {item?.duration?.totalDuration}
-                    </Text>
-                  </View>
-                  <Text style={styles.itemTimeText}>{item?.startTime}</Text>
+              {index == 0 && (
+                <View
+                  style={{
+                    ...styles.itemBottomTimeContainer,
+                    backgroundColor: "rgba(0, 0, 0, 0.3)",
+                  }}
+                >
+                  <Text style={styles.bottonTimerText}>
+                    Ends @ {""}
+                    {moment(item?.startTime, "hh:mm a")
+                      .add(
+                        item?.durationRemaining?.hours * 60 +
+                          item?.durationRemaining?.minutes,
+                        "minute"
+                      )
+                      .format("hh:mm A")}
+                  </Text>
                 </View>
-                {index == 0 && (
-                  <View
-                    style={{
-                      ...styles.itemBottomTimeContainer,
-                      backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    }}>
-                    <Text style={styles.bottonTimerText}>
-                      Ends @ {''}
-                      {moment(item?.startTime,"hh:mm a")
-                        .add(item?.duration?.hours * 60 + item?.duration?.minutes, 'minute')
-                        .format('hh:mm A')}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          </Swipeable>
-
+              )}
+            </View>
+          </TouchableOpacity>
+        </Swipeable>
       );
     },
     []
   );
 
   const draaggedItemStatus = async (data, from) => {
-    setSelectedId(allTaskList[from].id)
+    setSelectedId(allTaskList[from].id);
     // console.log('testing_Dragged', allTaskList[from].taskName);
 
     // console.log('testing_Dragged', allTaskList[from+1].status);
     // setallTaskList(data)
     if (allTaskList.length > 0) {
-      if (allTaskList[from].status === 'completed') {
-        Alert.alert('Alert !', 'Are you sure, you want to update status of this Task?', [
-          {
-            text: 'Cancel',
-            onPress: () => console.log('Cancel Pressed'),
-            style: 'cancel',
-          },
-          {
-            text: 'OK', onPress: async () => {
-              await appFBS.updateData(allTaskList[from].id, 'tasks', {
-                status: 'incomplete',
-              });
-              await getTasks();
-            }
-          },
-        ]);
+      if (allTaskList[from].status === "completed") {
+        Alert.alert(
+          "Alert !",
+          "Are you sure, you want to update status of this Task?",
+          [
+            {
+              text: "Cancel",
+              onPress: () => console.log("Cancel Pressed"),
+              style: "cancel",
+            },
+            {
+              text: "OK",
+              onPress: async () => {
+                await appFBS.updateData(allTaskList[from].id, "tasks", {
+                  status: "incomplete",
+                });
+                await getTasks();
+              },
+            },
+          ]
+        );
       } else {
         setExtendTime(-1);
         setRiseTime(-1);
         setCount(-1);
         // setisPlaying(false);
-        const sorted = data.sort((a, b) => (a.status > b.status) ? -1 : 1)
-        console.log('pak1', sorted);
+        const sorted = data.sort((a, b) => (a.status > b.status ? -1 : 1));
+        console.log("pak1", sorted);
         if (sorted !== undefined && sorted.length > 0) {
           const { duration, totalSeconds } = sorted[0];
 
           // startTime = moment().format('hh:mm A');
-          console.log('pak2', totalSeconds)
+          console.log("pak2", totalSeconds);
           setcurrentOnGoingTask(sorted[0]);
           // { allTaskList[0].totalSeconds !== undefined && totalDuration === 1 ? setTotalDuration(allTaskList[0].totalSeconds) : 1 }
           setdummpSeconds(totalSeconds);
@@ -539,20 +810,27 @@ const Tasks = props => {
           // let minut = 0;
           let allList = [];
           setallTaskList([]);
-          let start_time = moment().format('HH:mm a');
+          let start_time = moment().format("HH:mm a");
           sorted.map((item, index) => {
             let obj = {};
-            if (item?.status === 'incomplete') {
+            if (item?.status === "incomplete") {
               if (index === 0) {
-                start_time = moment(start_time, 'HH:mma').format('hh:mm A');
+                start_time = moment(start_time, "HH:mma").format("hh:mm A");
               } else {
-                start_time = moment(start_time, 'HH:mma')
-                  .add(item?.duration?.hours * 60 + item?.duration?.minutes, 'minute')
-                  .format('hh:mm A');
+                start_time = moment(start_time, "HH:mma")
+                  .add(
+                    item?.duration?.hours * 60 + item?.duration?.minutes,
+                    "minute"
+                  )
+                  .format("hh:mm A");
               }
               let totalSeconds =
                 item?.duration?.hours * 3600 + item?.duration?.minutes * 60;
-              obj = { ...item, startTime: start_time, totalSeconds: totalSeconds };
+              obj = {
+                ...item,
+                startTime: start_time,
+                totalSeconds: totalSeconds,
+              };
               allList.push(obj);
             } else {
               allList.push(item);
@@ -561,12 +839,15 @@ const Tasks = props => {
           setallTaskList(allList);
 
           newcalculateTotalTime(allList);
-          console.log('ddnfdnf', allList);
+          console.log("ddnfdnf", allList);
 
           setnextTaskmodalValues({
             ...nextTaskmodalValues,
             CurrentTaskName: sorted[0].taskName,
-            NextTaskName: (sorted[1] !== undefined && sorted[1].status !== 'completed') ? sorted[1].taskName : 'finished',
+            NextTaskName:
+              sorted[1] !== undefined && sorted[1].status !== "completed"
+                ? sorted[1].taskName
+                : "finished",
           });
         }
         // setmoveToNextTaskVisibility(true);
@@ -576,13 +857,13 @@ const Tasks = props => {
   const newcalculateTotalTime = async (allTaskList) => {
     let hour = 0;
     let minut = 0;
-    allTaskList.map(item => {
-      if (item?.status === 'incomplete') {
+    allTaskList.map((item) => {
+      if (item?.status === "incomplete") {
         hour = hour + item?.duration?.hours;
       }
     });
-    allTaskList.map(item => {
-      if (item?.status === 'incomplete') {
+    allTaskList.map((item) => {
+      if (item?.status === "incomplete") {
         minut = minut + item?.duration?.minutes;
         if (minut >= 60) {
           minut = minut - 60;
@@ -594,27 +875,28 @@ const Tasks = props => {
     if (hour == 0 && minut == 0) {
       setscheduleTotalTime(0);
     } else if (hour > 0 && minut > 0) {
-      setscheduleTotalTime(hour + 'h:' + minut + 'm');
+      setscheduleTotalTime(hour + "h:" + minut + "m");
     } else if (hour == 0 && minut > 0) {
-      setscheduleTotalTime('0h' + ':' + minut + 'm');
+      setscheduleTotalTime("0h" + ":" + minut + "m");
     } else if (hour > 0 && minut == 0) {
-      setscheduleTotalTime(hour + 'h:' + '00m');
+      setscheduleTotalTime(hour + "h:" + "00m");
     }
     sethoursAndMinutes({ ...hoursAndMinutes, hours: hour, minutes: minut });
-   
   };
-  const renderCompletedItem = item => {
+  const renderCompletedItem = (item) => {
     return (
       <View
         style={[
           styles.innerContainer,
           styles.compltedItem,
           { backgroundColor: item.color, marginVertical: responsiveHeight(1) },
-        ]}>
+        ]}
+      >
         <View style={styles.itemContainer}>
           <Text
             numberOfLines={1}
-            style={[styles.itemNameText, styles.compltedItemTitleText]}>
+            style={[styles.itemNameText, styles.compltedItemTitleText]}
+          >
             {item.taskName}
           </Text>
           <Text
@@ -622,24 +904,25 @@ const Tasks = props => {
             style={[
               styles.itemDurationText.color,
               styles.compltedItemTitleText,
-            ]}>
+            ]}
+          >
             {item?.duration?.totalDuration}
           </Text>
         </View>
       </View>
     );
   };
-  const deleteTask = async item => {
+  const deleteTask = async (item) => {
     setExtendTime(-1);
     setRiseTime(-1);
     setCount(-1);
     //setisPlaying(false);
-    await appFBS.deletData('tasks', item.id);
-    await firestore().collection('tasks').onSnapshot(onResult);
+    await appFBS.deletData("tasks", item.id);
+    await firestore().collection("tasks").onSnapshot(onResult);
     setdeleteModal(false);
   };
   const QuickActions = (item, index, drag) => {
-    console.log('indexxx', index + '_______' + drag)
+    // console.log("indexxx", index + "_______" + drag);
     return (
       // <Animated.View
       //   style={[styles.row, styles.underlayLeft]} // Fade in on open
@@ -647,17 +930,16 @@ const Tasks = props => {
       <View style={styles.qaContainer}>
         <TouchableOpacity
           onPress={() => {
-            updateStatus(item)
+            updateStatus(item);
             setExtendTime(-1);
             setRiseTime(-1);
             setdummpSeconds(0);
             setCount(-1);
             setisPlaying(false);
-          }}>
+          }}
+        >
           <View style={[styles.button, styles.button4]}>
-
             <Text style={[styles.buttonText]}>Skip</Text>
-
           </View>
         </TouchableOpacity>
         <TouchableOpacity
@@ -670,12 +952,11 @@ const Tasks = props => {
             // setCount(-1);
             //setisPlaying(false);
             row[index].close();
-            props.navigation.navigate('EditTask', { item: item });
-          }}>
+            props.navigation.navigate("EditTask", { item: item });
+          }}
+        >
           <View style={[styles.button, styles.button2]}>
-
             <Text style={[styles.buttonText]}>Edit</Text>
-
           </View>
         </TouchableOpacity>
         <TouchableOpacity
@@ -683,16 +964,14 @@ const Tasks = props => {
             row[index].close();
             setdeleteModal(true);
             setselectedTask(item);
-          }}>
+          }}
+        >
           <View style={[styles.button, styles.button3]}>
-
             <Text style={[styles.buttonText]}>Delete</Text>
-
           </View>
         </TouchableOpacity>
       </View>
       // </Animated.View>
-
     );
   };
   const undoTask = async () => {
@@ -700,92 +979,128 @@ const Tasks = props => {
       setExtendTime(0);
       setRiseTime(0);
       setCount(-1);
-      await appFBS.updateData(lastTaskId, 'tasks', {
-        status: 'incomplete',
+      await appFBS.updateData(lastTaskId, "tasks", {
+        status: "incomplete",
       });
     } else if (allTaskList.length > 0) {
-      toastServices.showToast('No previous task available');
+      toastServices.showToast("No previous task available");
     }
   };
+  // useEffect(() => {
+  //   console.log(getMinutes(dummpSeconds), "dummpSeconds");
+  // }, [dummpSeconds]);
   return (
     <SafeAreaView style={styles.container}>
-      {(allTaskList.length === 0 && visiblity === false) &&
+      {allTaskList.length === 0 && visiblity === false && (
         <View style={styles.loading}>
-          <ActivityIndicator size='large' color={colors.black} />
+          <ActivityIndicator size="large" color={colors.black} />
         </View>
-      }
-      {allTaskList.length === 0 &&
+      )}
+      {allTaskList.length === 0 && (
         <View style={styles.loading}>
-          <Text style={styles.couterTimeTextBlack}>
-            {'No task available'}
-          </Text>
+          <Text style={styles.couterTimeTextBlack}>{"No task available"}</Text>
         </View>
-      }
-      <StatusBar backgroundColor={'white'} barStyle="dark-content" />
+      )}
+      <StatusBar backgroundColor={"white"} barStyle="dark-content" />
       <TaskHeader
-        duration={scheduleTotalTime ? scheduleTotalTime : '00:00'}
+        duration={scheduleTotalTime ? scheduleTotalTime : "00:00"}
         endTime={
           totalDuration == 0
-            ? '00:00'
-            : moment(`${data.startHour}:${data.startMin} ${data.AMPM}`,"hh:mm a")
-              .add(hoursAndMinutes, 'minute')
-              .format('hh:mm A')
+            ? "00:00"
+            : moment(
+                `${data.startHour}:${data.startMin} ${data.AMPM}`,
+                "hh:mm a"
+              )
+                .add(hoursAndMinutes, "minute")
+                .format("hh:mm A")
         }
         title={data?.name}
         onBackPress={() => props.navigation.goBack()}
       />
       <View style={styles.timerContainer}>
-        {dummpSeconds === undefined ? null :
-          <Progress.Pie color={defaultColor} progress={riseSeconds / (totalDuration)} size={responsiveWidth(50)} />}
+        {dummpSeconds === undefined ? null : (
+          <Progress.Pie
+            color={defaultColor}
+            progress={riseSeconds / totalDuration}
+            size={responsiveWidth(54)}
+          />
+        )}
         <View style={styles.absoluteTimeContainer}>
           {extendTime > 0 ? (
-            <Text style={styles.couterTimeRedText}>
-              {`+${Math.trunc(extendTime / 3600)}0:${Math.trunc(
-                extendTime / 60,
-              ) > 9 ? Math.trunc(
-                extendTime / 60,
-              ) : '0' + Math.trunc(
-                extendTime / 60,
-              )}:${Math.trunc(extendTime % 60) > 9 ? Math.trunc(extendTime % 60) : '0' + Math.trunc(extendTime % 60)}`}
-            </Text>
+            <View style={{ flexDirection: "row" }}>
+              <Text style={[styles.couterTimeRedText, { fontWeight: "700" }]}>
+                {`+${
+                  Math.trunc(extendTime / 3600) > 9
+                    ? Math.trunc(extendTime / 3600) + ":"
+                    : Math.trunc(extendTime / 3600) === 0
+                    ? ""
+                    : "0" + Math.trunc(extendTime / 3600) + ":"
+                }${
+                  getMinutes(extendTime) > 9
+                    ? getMinutes(extendTime)
+                    : "0" + getMinutes(extendTime)
+                }:`}
+              </Text>
+              <Text style={[styles.couterTimeRedText, { fontWeight: "400" }]}>
+                {Math.trunc(extendTime % 60) > 9
+                  ? Math.trunc(extendTime % 60)
+                  : "0" + Math.trunc(extendTime % 60)}
+              </Text>
+            </View>
           ) : (
             <View>
-              {dummpSeconds === undefined || dummpSeconds === 0 ?
-                <Text style={styles.couterTimeText}>
-                  {'00:00:00'}
-                </Text> :
-                <Text style={styles.couterTimeText}>
-                  {/* {currentOnGoingTask !== undefined && setcurrentOnGoingTask(allTaskList[0]) } */}
-                  {/* {allTaskList[0].totalSeconds !== undefined && dummpSeconds === 0 ? allTaskList[0].status === 'incomplete' && setdummpSeconds(allTaskList[0].totalSeconds) : null} */}
-                  {`${Math.trunc(dummpSeconds / 3600) > 9 ? Math.trunc(dummpSeconds / 3600) : '0' + Math.trunc(dummpSeconds / 3600)}:${(Math.trunc(
-                    dummpSeconds / 60
-                  ) == 60 ? '00' : Math.trunc(
-                    dummpSeconds / 60,
-                  ) > 9 ? Math.trunc(
-                    dummpSeconds / 60,
-                  ) : '0' + Math.trunc(
-                    dummpSeconds / 60,
-                  ))}:${Math.trunc(dummpSeconds % 60) > 9 ? Math.trunc(dummpSeconds % 60) : '0' + Math.trunc(dummpSeconds % 60)}`}
-
-                </Text>
-              }
+              {dummpSeconds === undefined || dummpSeconds === 0 ? (
+                <Text style={styles.couterTimeText}>{"00:00:00"}</Text>
+              ) : (
+                <View style={{ flexDirection: "row" }}>
+                  <Text style={[styles.couterTimeText, { fontWeight: "700" }]}>
+                    {/* {currentOnGoingTask !== undefined && setcurrentOnGoingTask(allTaskList[0]) } */}
+                    {/* {allTaskList[0].totalSeconds !== undefined && dummpSeconds === 0 ? allTaskList[0].status === 'incomplete' && setdummpSeconds(allTaskList[0].totalSeconds) : null} */}
+                    {`${
+                      Math.trunc(dummpSeconds / 3600) > 9
+                        ? Math.trunc(dummpSeconds / 3600) + ":"
+                        : Math.trunc(dummpSeconds / 3600) === 0
+                        ? ""
+                        : "0" + Math.trunc(dummpSeconds / 3600) + ":"
+                    }${
+                      getMinutes(dummpSeconds) > 9
+                        ? getMinutes(dummpSeconds)
+                        : "0" + getMinutes(dummpSeconds)
+                    }:`}
+                  </Text>
+                  <Text style={[styles.couterTimeText, { fontWeight: "400" }]}>
+                    {/* {currentOnGoingTask !== undefined && setcurrentOnGoingTask(allTaskList[0]) } */}
+                    {/* {allTaskList[0].totalSeconds !== undefined && dummpSeconds === 0 ? allTaskList[0].status === 'incomplete' && setdummpSeconds(allTaskList[0].totalSeconds) : null} */}
+                    {`${
+                      Math.trunc(dummpSeconds % 60) > 9
+                        ? Math.trunc(dummpSeconds % 60)
+                        : "0" + Math.trunc(dummpSeconds % 60)
+                    }`}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
           <TouchableOpacity
-            onPress={() => currentOnGoingTask.status === 'incomplete' ? setStartTime(moment().format("hh:mma")) : toastServices.showToast('No task available')}
-            style={styles.playPauseButtonContainer}>
+            onPress={() =>
+              currentOnGoingTask.status === "incomplete"
+                ? setStartTime(moment().format("hh:mma"))
+                : toastServices.showToast("No task available")
+            }
+            style={styles.playPauseButtonContainer}
+          >
             {isPlaying ? (
               <Icon
                 name="controller-paus"
                 type="entypo"
-                color={extendTime > 0 ? 'gray' : defaultColor}
+                color={extendTime > 0 ? "gray" : defaultColor}
                 size={responsiveFontSize(4)}
               />
             ) : (
               <Icon
                 name="controller-play"
                 type="entypo"
-                color={extendTime > 0 ? 'gray' : defaultColor}
+                color={extendTime > 0 ? "gray" : defaultColor}
                 size={responsiveFontSize(5)}
               />
             )}
@@ -807,29 +1122,37 @@ const Tasks = props => {
         <TouchableOpacity
           onPress={() => {
             setisPlaying(false);
-            props.navigation.navigate('AddTask', { data: data });
+            props.navigation.navigate("AddTask", { data: data });
           }}
-          style={styles.tabIconButton}>
+          style={styles.tabIconButton}
+        >
           <Image style={styles.tabIconImage} source={appImages.plusIcon} />
           <Text style={[styles.tabButtonText, styles.orangeText]}>Add</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => updateStatus()}
-          style={styles.tabIconButton}>
+          style={styles.tabIconButton}
+        >
           <Image style={styles.tabIconImage} source={appImages.okIcon} />
-          <Text style={styles.tabButtonText}>Mark Done</Text>
+          <Text style={styles.tabButtonText}>Done</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => undoTask()}
-          style={styles.tabIconButton}>
+          style={styles.tabIconButton}
+        >
           <Image style={styles.tabIconImage} source={appImages.undoIcon} />
           <Text style={styles.tabButtonText}>Undo</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setResetModal(true)}
-          style={styles.tabIconButton}>
+          style={styles.tabIconButton}
+        >
           {/* <Image style={styles.tabIconImage} source={appImages.undoIcon} /> */}
-          <MaterialCommunityIcons style={{ color: AppColor.primary }} name='lock-reset' size={40} />
+          <MaterialCommunityIcons
+            style={{ color: AppColor.primary }}
+            name="lock-reset"
+            size={40}
+          />
           <Text style={[styles.tabButtonText, styles.orangeText]}>Reset</Text>
         </TouchableOpacity>
       </View>
@@ -841,7 +1164,7 @@ const Tasks = props => {
         visible={deleteModal}
         TaskName={selectedTask?.taskName}
         type="Task"
-        TaskTitle={'Are you sure you want to delete the task'}
+        TaskTitle={"Are you sure you want to delete the task"}
       />
       <ResetConfirmation
         onpressCancel={() => setResetModal(false)}
@@ -863,10 +1186,14 @@ const Tasks = props => {
       <OvertimeTask
         setVisible={setExtendTimeVisibility}
         visible={extendTimeVisibility}
-        CurrentTaskName={allTaskList[0] !== undefined && allTaskList[0].taskName}
-        NextTaskName={(allTaskList[1] !== undefined && allTaskList[1].status !== 'completed') ? (
-          allTaskList[1].taskName
-        ) : 'finished'}
+        CurrentTaskName={
+          allTaskList[0] !== undefined && allTaskList[0].taskName
+        }
+        NextTaskName={
+          allTaskList[1] !== undefined && allTaskList[1].status !== "completed"
+            ? allTaskList[1].taskName
+            : "finished"
+        }
       />
     </SafeAreaView>
   );

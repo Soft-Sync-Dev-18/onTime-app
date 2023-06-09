@@ -1,10 +1,18 @@
-import {automotive, hobbies, home, landScapping} from '../assets';
-import * as Actions from './action-types';
+import { automotive, hobbies, home, landScapping } from "../assets";
+import * as Actions from "./action-types";
 
 const INITIAL_STATE = {
   userInfo: {},
   postInfo: {},
   order: {},
+  taskTimer: {
+    defaultColor: "",
+    extendTime: 0,
+    riseSeconds: 0,
+    dummpSeconds: 0,
+    ExtendTimeVisibility: false,
+    isPlaying: false,
+  },
 };
 
 export default (state = INITIAL_STATE, action) => {
@@ -23,6 +31,11 @@ export default (state = INITIAL_STATE, action) => {
       return {
         ...state,
         order: action.payload,
+      };
+    case Actions.SET_TIMER:
+      return {
+        ...state,
+        taskTimer: action.payload,
       };
     default:
       return state;

@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     borderRadius: responsiveWidth(3),
   },
   colorPicker: {
-    width: responsiveWidth(100),
+    width: responsiveWidth(90),
     height: responsiveHeight(40),
     marginTop: responsiveHeight(5),
   },

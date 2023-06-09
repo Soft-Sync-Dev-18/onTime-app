@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   innerContainer: {
     alignSelf: 'center',
     width: responsiveWidth(90),
-    height: responsiveHeight(11.5),
+    height: responsiveHeight(8),
     borderRadius: responsiveWidth(2),
     // borderTopLeftRadius: responsiveWidth(2),
     // borderTopRightRadius: responsiveWidth(2),
@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'white',
     height: responsiveWidth(14),
+    marginTop: responsiveWidth(2),
     width: responsiveWidth(14),
     borderRadius: responsiveWidth(14 / 2),
     alignItems: 'center',
@@ -127,15 +128,16 @@ const styles = StyleSheet.create({
   couterTimeRedText: {
     fontSize: responsiveFontSize(3.8),
     color: 'red',
-    fontFamily: fontFamily.appTextSemiBold,
+    fontFamily: fontFamily.appTextRegular,
   },
   timerContainer: {
     alignSelf: 'center',
-    marginTop: responsiveHeight(2),
-    backgroundColor: colors.gray600,
-    height: responsiveWidth(50),
-    width: responsiveWidth(50),
-    borderRadius: responsiveWidth(25),
+    marginTop: responsiveHeight(1.5),
+    marginBottom: responsiveHeight(2),
+    backgroundColor: colors.gray500,
+    height: responsiveWidth(54),
+    width: responsiveWidth(54),
+    borderRadius: responsiveWidth(50),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -162,7 +164,7 @@ const styles = StyleSheet.create({
   itemNameText: {
     color: 'white',
     fontFamily: fontFamily.appTextExtraBold,
-    fontSize: responsiveFontSize(2),
+    fontSize: responsiveFontSize(2.2),
     maxWidth: responsiveWidth(60),
   },
   row: {
@@ -190,12 +192,12 @@ const styles = StyleSheet.create({
   itemTimeText: {
     color: 'white',
     fontFamily: fontFamily.appTextExtraBold,
-    fontSize: responsiveFontSize(2),
+    fontSize: responsiveFontSize(2.2),
   },
   itemDurationText: {
     color: 'white',
     fontFamily: fontFamily.appTextRegular,
-    fontSize: responsiveFontSize(2),
+    fontSize: responsiveFontSize(2.2),
   },
   addButton: {
     position: 'absolute',

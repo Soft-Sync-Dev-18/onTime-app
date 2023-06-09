@@ -49,7 +49,8 @@ export default StyleSheet.create({
   },
   timeText: {
     color: 'white',
-    fontFamily: fontFamily.appTextBold,
+    fontFamily: fontFamily.appTextRegular,
+    fontWeight:"600",
     fontSize: responsiveFontSize(1.8),
     textAlign: 'center',
     textAlignVertical: 'center',

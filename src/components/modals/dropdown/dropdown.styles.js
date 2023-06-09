@@ -19,7 +19,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: colors.gray600,
-    fontSize: responsiveFontSize(2),
+    fontSize: responsiveFontSize(2.2),
     fontFamily: fontFamily.appTextMedium,
     height: responsiveHeight(4),
     borderBottomColor: colors.gray600,
