@@ -6,6 +6,9 @@ const appImages = {
   orangeLogo: require(IMAGE_DIR + 'orangeLogo.png'),
   headerLogo: require(IMAGE_DIR + 'headerLogo.png'),
 
+  bottomSheetPic: require(IMAGE_DIR + 'Capture.png'),
+  bottomSheetPic2: require(IMAGE_DIR + 'Capture2.jpg'),
+
   profileImage1: 'https://randomuser.me/api/portraits/women/76.jpg',
   profileImage2: 'https://randomuser.me/api/portraits/women/66.jpg',
   profileImage3: 'https://randomuser.me/api/portraits/women/3.jpg',

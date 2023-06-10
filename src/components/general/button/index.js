@@ -9,6 +9,7 @@ const BorderButton = ({
   disabled,
   loading = false,
   marginTop,
+  backgroundColor
 }) => {
   return (
     <TouchableOpacity
@@ -16,12 +17,16 @@ const BorderButton = ({
       style={{
         ...styles.container,
         marginTop: marginTop ? responsiveHeight(marginTop) : null,
+        backgroundColor:backgroundColor ? backgroundColor : null,
       }}
       disabled={disabled}>
       {loading ? (
         <ActivityIndicator size="small" color={colors.gray600} />
       ) : (
-        <Text style={styles.title}>{title}</Text>
+        <Text style={{
+          ...styles.title, 
+          color:backgroundColor ? '#fff': '#000'
+        }}>{title}</Text>
       )}
     </TouchableOpacity>
   );

@@ -82,6 +82,7 @@ const Tasks = (props) => {
     NextTaskName: "",
   });
   const [isPlaying, setisPlaying] = useState(false);
+  const [loader, setLoader] = useState(true);
   const [scheduleTotalTime, setscheduleTotalTime] = useState("");
   const [totalDuration, setTotalDuration] = useState(1);
   const [defaultColor, setdefaultColor] = useState(colors.gray600);
@@ -99,275 +100,92 @@ const Tasks = (props) => {
   const [moveToNextTaskVisibility, setmoveToNextTaskVisibility] =
     useState(false);
   const [extendTimeVisibility, setExtendTimeVisibility] = useState(false);
-  const taskTimer = useSelector((state) => state?.state?.taskTimer);
+  // const taskTimer = useSelector((state) => state?.state?.taskTimer);
   // useEffect(() => {
-  //   console.log(taskTimer, "taskTimer");
-  // }, []);
-  // useEffect(() => {
-  //   if (taskTimer?.isPlaying && !getTime && currentOnGoingTask !== {}) {
-  //     setGetTime(true);
-  //   }
-  // }, [taskTimer?.isPlaying]);
-  // useEffect(() => {
-  //   if (taskTimer?.isPlaying && getTime) {
-  //     console.log(taskTimer, "taskTimer,taskTimer,taskTimers");
-  //     setdefaultColor(taskTimer.defaultColor);
-  //     setExtendTime(taskTimer.extendTime);
-  //     setRiseTime(taskTimer.riseSeconds);
-  //     setdummpSeconds(taskTimer.dummpSeconds);
-  //     setisPlaying(taskTimer.isPlaying);
-  //     if (taskTimer.ExtendTimeVisibility) {
-  //       dispatch(
-  //         setTaskTimer({
-  //           ...taskTimer,
-  //           ExtendTimeVisibility: false,
-  //         })
-  //       );
-  //       setExtendTimeVisibility(false);
-  //     }
-  //   }
-  // }, [
-  //   taskTimer,
-  //   taskTimer?.dummpSeconds,
-  //   taskTimer?.isPlaying,
-  //   taskTimer?.extendTime,
-  //   getTime,
-  //   isPlaying,
-  // ]);
-  // useEffect(() => {
-  //   if (currentOnGoingTask !== {}) {
-  //     if (isPlaying) {
-  //       console.log(
-  //         currentOnGoingTask,
-  //         taskTimer,
-  //         "currentOnGoingTask, taskTimer"
-  //       );
-  //       let totalSeconds =
-  //         currentOnGoingTask?.durationRemaining?.seconds +
-  //         currentOnGoingTask?.durationRemaining?.minutes * 60 +
-  //         currentOnGoingTask?.durationRemaining?.hours * 60 * 60;
-  //       let newTimes = currentOnGoingTask?.durationRemaining?.extraTime
-  //         ? { extendTime: extendTime }
-  //         : { dummpSeconds: totalSeconds, riseSeconds: riseSeconds };
-  //       dispatch(
-  //         taskTimerFn(currentOnGoingTask, {
-  //           ...taskTimer,
-  //           ...newTimes,
-  //         })
-  //       );
-  //     }
-  //   }
-  // }, [isPlaying]);
-  // useEffect(() => {
-  //   if (currentOnGoingTask !== {}) {
-  //     // console.log(taskTimer, "taskTimer");
-  //     let obj = taskTimer;
-  //     // console.log(obj, "obj");
+  //   if (currentOnGoingTask.status === "incomplete") {
   //     if (currentOnGoingTask?.startTimer) {
-  //       // setisPlaying(currentOnGoingTask?.startTimer);
-  //       obj.isPlaying = currentOnGoingTask?.startTimer;
+  //       // setStartTime()
+  //       setisPlaying(currentOnGoingTask?.startTimer);
   //     }
-  //     if (currentOnGoingTask?.durationRemaining?.extraTime) {
-  //       // console.log(
-  //       //   currentOnGoingTask,
-  //       //   "currentOnGoingTaskcurrentOnGoingTaskcurrentOnGoingTask"
-  //       // );
-  //       obj.extendTime =
-  //         currentOnGoingTask?.durationRemaining?.seconds +
-  //         currentOnGoingTask?.durationRemaining?.minutes * 60 +
-  //         currentOnGoingTask?.durationRemaining?.hours * 60 * 60;
+  //   }
+  // }, []);
+  useEffect(() => {
+    const timer = BackgroundTimer.setInterval(() => {
+      if (isPlaying && currentOnGoingTask.status === "incomplete") {
+        if (extendTime > 0) {
+          // console.log(extendTime, "extendTime");
+          let val = setExtendTime(extendTime + 1);
+          setdefaultColor(colors.gray600);
+          if (extendTime % 300 === 0) {
+            // console.log(extendTime);
+            const notification = {
+              title: `${
+                Math.trunc(extendTime / 3600) !== 0
+                  ? Math.trunc(extendTime / 3600) + "h"
+                  : ""
+              }${
+                getMinutes(extendTime) !== 0
+                  ? getMinutes(extendTime) + "min"
+                  : ""
+              } have been passed for ${currentOnGoingTask?.taskName}`,
+              body: "don't forget to check your routine",
+            };
 
-  //       // setExtendTime(
-  //       //   currentOnGoingTask?.seconds +
-  //       //     currentOnGoingTask?.minutes * 60 +
-  //       //     currentOnGoingTask?.hours * 60 * 60
-  //       // );
-  //       // console.log(
-  //       //   currentOnGoingTask?.seconds +
-  //       //     currentOnGoingTask?.minutes * 60 +
-  //       //     currentOnGoingTask?.hours * 60 * 60,
-  //       //   "ssssssssssse"
-  //       // );
-  //     }
-  //     if (taskTimer !== obj) {
-  //       dispatch(
-  //         setTaskTimer({
-  //           ...obj,
-  //         })
-  //       );
-  //     }
-  //   }
-  // }, [currentOnGoingTask]);
-  useEffect(() => {
-    console.log(typeof isPlaying, isPlaying);
-    console.log("GGG");
-    if (isPlaying) {
-      console.log("HJHJKKKLKLOIOII");
-      dispatch(
-        taskTimerFn(currentOnGoingTask, {
-          defaultColor: currentOnGoingTask?.color,
-          extendTime: extendTime,
-          riseSeconds: riseSeconds,
-          dummpSeconds: dummpSeconds,
-          ExtendTimeVisibility: false,
-          isPlaying: true,
-        })
-      );
-      setGetTime(isPlaying);
-    } else {
-      // setGetTime(true);
-      console.log("pausseedddd");
-      // dispatch(
-      //   taskTimerFn(currentOnGoingTask, {
-      //     defaultColor: currentOnGoingTask?.color,
-      //     extendTime: extendTime,
-      //     riseSeconds: riseSeconds,
-      //     dummpSeconds: dummpSeconds,
-      //     ExtendTimeVisibility: false,
-      //     isPlaying: false,
-      //   })
-      // );
-    }
-  }, [isPlaying]);
-  // useEffect(() => {
-  //   console.log(taskTimer, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-  // }, [taskTimer]);
-  // useEffect(()=>{
-  //   if (taskTimer?.isPlaying) {
-  //     console.log(taskTimer, "taskTimer,taskTimer,taskTimers");
-  //     setdefaultColor(taskTimer.defaultColor);
-  //     setExtendTime(taskTimer.extendTime);
-  //     setRiseTime(taskTimer.riseSeconds);
-  //     setdummpSeconds(taskTimer.dummpSeconds);
-  //     console.log('isplaying 236')
-  //     setisPlaying(taskTimer.isPlaying);
-  //     if (taskTimer.ExtendTimeVisibility) {
-  //       dispatch(
-  //         setTaskTimer({
-  //           ...taskTimer,
-  //           ExtendTimeVisibility: false,
-  //         })
-  //       );
-  //       setExtendTimeVisibility(false);
-  //     }
-  //     // setGetTime(!getTime);
-  //   }
-  // },[])
-  useEffect(() => {
-    setGetTime(true);
-    if (taskTimer?.isPlaying) {
-      setisPlaying(true);
-    }
-  }, []);
-  useEffect(() => {
-    // setGetTime(true);
-    if (taskTimer) {
-      console.log(taskTimer);
-    }
-  }, [taskTimer]);
-  useEffect(() => {
-    // console.log(taskTimer?.isPlaying, getTime, isPlaying, "CHECKKK REDUCCC");
-    // && getTime && isPlaying
-    if (
-      taskTimer?.isPlaying &&
-      taskTimer?.isPlaying !== undefined &&
-      getTime &&
-      isPlaying
-    ) {
-      console.log(
-        taskTimer,
-        isPlaying,
-        "taskTimer,taskTimer,taskTimersFFFFFFFFFFFFFFF232223"
-      );
-      setdefaultColor(taskTimer.defaultColor);
-      setExtendTime(taskTimer.extendTime);
-      setRiseTime(taskTimer.riseSeconds);
-      setdummpSeconds(taskTimer.dummpSeconds);
-      // console.log("isplaying 236");
-      // setisPlaying(taskTimer.isPlaying);
-      if (taskTimer.ExtendTimeVisibility) {
-        dispatch(
-          setTaskTimer({
-            ...taskTimer,
-            ExtendTimeVisibility: false,
-          })
-        );
-        setExtendTimeVisibility(false);
+            // Send the notification
+            Notifications.postLocalNotification(notification);
+
+            NotificationSounds.getNotifications("notification").then(
+              (soundsList) => {
+                console.log("SOUNDS", JSON.stringify(soundsList));
+                if (soundsList.length !== 0) {
+                  playSampleSound(soundsList[1]);
+                } else {
+                  console.log(
+                    "if you want to stop any playing sound just call"
+                  );
+                }
+                // if you want to stop any playing sound just call:
+                // stopSampleSound();
+              }
+            );
+          }
+        } else {
+          if (dummpSeconds !== undefined) {
+            setdummpSeconds(dummpSeconds - 1);
+            setRiseTime(riseSeconds + 1);
+            if (dummpSeconds === 1) {
+              const notification = {
+                title: `Your time is up ${currentOnGoingTask?.taskName}`,
+                body: "don't forget to check your routine",
+              };
+
+              // Send the notification
+              Notifications.postLocalNotification(notification);
+              NotificationSounds.getNotifications("notification").then(
+                (soundsList) => {
+                  // console.warn('SOUNDS', JSON.stringify(soundsList));
+                  if (soundsList.length !== 0) {
+                    playSampleSound(soundsList[1]);
+                  }
+                  // if you want to stop any playing sound just call:
+                  // stopSampleSound();
+                }
+              );
+
+              setExtendTimeVisibility(true);
+              {
+                count === -1 && setExtendTime(1);
+              }
+            }
+          }
+          // setCount(0);
+        }
+      } else {
+        setisPlaying(false);
       }
-      // setGetTime(!getTime);
-    }
-    // else{
-    //   setisPlaying(taskTimer.isPlaying);
-    // }
-  }, [taskTimer, getTime, isPlaying]);
-  // useEffect(() => {
-  //   const timer = _BackgroundTimer.setInterval(() => {
-  //     if (isPlaying && currentOnGoingTask.status === "incomplete") {
-  //       if (extendTime > 0) {
-  //         // console.log(extendTime, "extendTime");
-  //         let val = setExtendTime(extendTime + 1);
-  //         setdefaultColor(colors.gray600);
-  //         if (extendTime % 300 === 0) {
-  //           // console.log(extendTime);
-  //           const notification = {
-  //             title: "Hello",
-  //             body: "This is a notification from React Native",
-  //           };
-
-  //           // Send the notification
-  //           Notifications.postLocalNotification(notification);
-
-  //           NotificationSounds.getNotifications("notification").then(
-  //             (soundsList) => {
-  //               console.log("SOUNDS", JSON.stringify(soundsList));
-  //               if (soundsList.length !== 0) {
-  //                 playSampleSound(soundsList[1]);
-  //               } else {
-  //                 console.log(
-  //                   "if you want to stop any playing sound just call"
-  //                 );
-  //               }
-  //               // if you want to stop any playing sound just call:
-  //               // stopSampleSound();
-  //             }
-  //           );
-  //         }
-  //       } else {
-  //         if (dummpSeconds !== undefined) {
-  //           setdummpSeconds(dummpSeconds - 1);
-  //           setRiseTime(riseSeconds + 1);
-  //           if (dummpSeconds === 1) {
-  //             const notification = {
-  //               title: "Hello",
-  //               body: "This is a notification from React Native",
-  //             };
-
-  //             // Send the notification
-  //             Notifications.postLocalNotification(notification);
-  //             NotificationSounds.getNotifications("notification").then(
-  //               (soundsList) => {
-  //                 // console.warn('SOUNDS', JSON.stringify(soundsList));
-  //                 if (soundsList.length !== 0) {
-  //                   playSampleSound(soundsList[1]);
-  //                 }
-  //                 // if you want to stop any playing sound just call:
-  //                 // stopSampleSound();
-  //               }
-  //             );
-  //             setExtendTimeVisibility(true);
-  //             {
-  //               count === -1 && setExtendTime(1);
-  //             }
-  //           }
-  //         }
-  //         // setCount(0);
-  //       }
-  //     } else {
-  //       setisPlaying(false);
-  //     }
-  //   }, 1000);
-  //   return () => _BackgroundTimer.clearInterval(timer);
-  // });
+    }, 1000);
+    return () => BackgroundTimer.clearInterval(timer);
+  });
   useEffect(() => {
     firestore().collection("tasks").onSnapshot(onResult);
   }, []);
@@ -386,6 +204,9 @@ const Tasks = (props) => {
     console.log("isplaying 332");
     setisPlaying(false);
     let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
+    if (!list?.length) {
+      setLoader(false);
+    }
     list?.map(async (ele, index) => {
       await appFBS.updateData(ele.id, "tasks", {
         status: "incomplete",
@@ -486,6 +307,27 @@ const Tasks = (props) => {
       ? Math.trunc(time / 60) - Math.trunc(time / 3600) * 60
       : Math.trunc(time / 60);
   };
+  const saveToFirebase = async () => {
+    if (isPlaying) {
+      await appFBS.updateData(currentOnGoingTask.id, "tasks", {
+        startTimer: isPlaying,
+        durationRemaining: {
+          totalDuration: currentOnGoingTask?.durationRemaining?.totalDuration,
+          hours:
+            extendTime > 0
+              ? Math.trunc(extendTime / 3600)
+              : Math.trunc(dummpSeconds / 3600),
+          minutes:
+            extendTime > 0 ? getMinutes(extendTime) : getMinutes(dummpSeconds),
+          seconds:
+            extendTime > 0
+              ? Math.trunc(extendTime % 60)
+              : Math.trunc(dummpSeconds % 60),
+          extraTime: extendTime > 0 ? true : false,
+        },
+      });
+    }
+  };
   const setStartTime = async () => {
     let newData = {
       ...data,
@@ -519,12 +361,12 @@ const Tasks = (props) => {
     }
     // console.log(currentOnGoingTask, "currentOnGoingTask");
     // if (isPlaying) {
-    dispatch(
-      setTaskTimer({
-        ...taskTimer,
-        isPlaying: !isPlaying,
-      })
-    );
+    // dispatch(
+    //   setTaskTimer({
+    //     ...taskTimer,
+    //     isPlaying: !isPlaying,
+    //   })
+    // );
     if (tSeconds !== dummpSeconds) {
       setTaskStartTime(false);
       console.log("isplaying 469");
@@ -569,6 +411,7 @@ const Tasks = (props) => {
     let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
     // let start_time = data?.time;
     // let firstime = moment().format('HH:mm a');
+
     let start_time = addStartTime
       ? time
       : moment(
@@ -578,6 +421,9 @@ const Tasks = (props) => {
     let completeList = [];
     let incompleteList = [];
     let allList = [];
+    if (!list?.length) {
+      setLoader(false);
+    }
     list?.map((ele, index) => {
       // console.log(ele, "ele");
       if (ele.status == "incomplete") {
@@ -712,10 +558,35 @@ const Tasks = (props) => {
         setCount(0);
         setdefaultColor(colors.gray600);
         setcurrentOnGoingTask(item);
+        if (item?.startTimer) {
+          setisPlaying(item?.startTimer);
+        }
+        let totalSeconds =
+          item?.duration?.hours * 3600 + item?.duration?.minutes * 60;
+        setTotalDuration(totalSeconds);
+        let totalSeconds2 =
+          item?.durationRemaining?.hours * 3600 +
+          item?.durationRemaining?.minutes * 60 +
+          (item?.durationRemaining?.seconds % 60);
+        setRiseTime(totalSeconds - totalSeconds2);
+        setLoader(false);
       } else {
         if (index == 0) {
           setdefaultColor(item.color);
           setcurrentOnGoingTask(item);
+          if (item?.startTimer) {
+            setisPlaying(item?.startTimer);
+          }
+          let totalSeconds =
+            item?.duration?.hours * 3600 + item?.duration?.minutes * 60;
+          setTotalDuration(totalSeconds);
+          let totalSeconds2 =
+            item?.durationRemaining?.hours * 3600 +
+            item?.durationRemaining?.minutes * 60 +
+            (item?.durationRemaining?.seconds % 60);
+          setRiseTime(totalSeconds - totalSeconds2);
+          // console.log(totalSeconds - totalSeconds2,"totalSeconds - totalSeconds2");
+          setLoader(false);
           now = moment();
           //  console.log('timeee', +',,,'+now.format("m"))
         }
@@ -1081,8 +952,12 @@ const Tasks = (props) => {
                 .format("hh:mm A")
         }
         title={data?.name}
-        onBackPress={() => props.navigation.goBack()}
+        onBackPress={() => {
+          saveToFirebase();
+          props.navigation.goBack();
+        }}
       />
+
       <View style={styles.timerContainer}>
         {dummpSeconds === undefined ? null : (
           <Progress.Pie
@@ -1091,6 +966,7 @@ const Tasks = (props) => {
             size={responsiveWidth(54)}
           />
         )}
+
         <View style={styles.absoluteTimeContainer}>
           {extendTime > 0 ? (
             <View style={{ flexDirection: "row" }}>
@@ -1149,28 +1025,32 @@ const Tasks = (props) => {
           )}
           <TouchableOpacity
             onPress={() => {
-              if (currentOnGoingTask.status === "incomplete") {
-                if (isPlaying) {
-                  console.log("dispatchkskskskskTimerFn");
-                  dispatch(
-                    taskTimerFn(currentOnGoingTask, {
-                      defaultColor: currentOnGoingTask?.color,
-                      extendTime: taskTimer.extendTime,
-                      riseSeconds: taskTimer.riseSeconds,
-                      dummpSeconds: taskTimer.dummpSeconds,
-                      ExtendTimeVisibility: false,
-                      isPlaying: false,
-                    })
-                  );
+              if (!loader) {
+                if (currentOnGoingTask.status === "incomplete") {
+                  // if (isPlaying) {
+                  //   console.log("dispatchkskskskskTimerFn");
+                  //   dispatch(
+                  //     taskTimerFn(currentOnGoingTask, {
+                  //       defaultColor: currentOnGoingTask?.color,
+                  //       extendTime: taskTimer.extendTime,
+                  //       riseSeconds: taskTimer.riseSeconds,
+                  //       dummpSeconds: taskTimer.dummpSeconds,
+                  //       ExtendTimeVisibility: false,
+                  //       isPlaying: false,
+                  //     })
+                  //   );
+                  // }
+                  setStartTime(moment().format("hh:mma"));
+                } else {
+                  toastServices.showToast("No task available");
                 }
-                setStartTime(moment().format("hh:mma"));
-              } else {
-                toastServices.showToast("No task available");
               }
             }}
             style={styles.playPauseButtonContainer}
           >
-            {isPlaying ? (
+            {loader ? (
+              <ActivityIndicator size={50} color="black" />
+            ) : isPlaying ? (
               <Icon
                 name="controller-paus"
                 type="entypo"
