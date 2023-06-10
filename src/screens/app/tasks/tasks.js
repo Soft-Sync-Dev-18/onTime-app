@@ -199,7 +199,10 @@ const Tasks = (props) => {
   //   }
   // }, [currentOnGoingTask]);
   useEffect(() => {
+    console.log(typeof isPlaying, isPlaying);
+    console.log("GGG");
     if (isPlaying) {
+      console.log("HJHJKKKLKLOIOII");
       dispatch(
         taskTimerFn(currentOnGoingTask, {
           defaultColor: currentOnGoingTask?.color,
@@ -210,29 +213,78 @@ const Tasks = (props) => {
           isPlaying: true,
         })
       );
-      setGetTime(!getTime);
+      setGetTime(isPlaying);
     } else {
-      console.log('pausseedddd')
-      dispatch(
-        taskTimerFn(currentOnGoingTask, {
-          defaultColor: currentOnGoingTask?.color,
-          extendTime: extendTime,
-          riseSeconds: riseSeconds,
-          dummpSeconds: dummpSeconds,
-          ExtendTimeVisibility: false,
-          isPlaying: false,
-        })
-      );
+      // setGetTime(true);
+      console.log("pausseedddd");
+      // dispatch(
+      //   taskTimerFn(currentOnGoingTask, {
+      //     defaultColor: currentOnGoingTask?.color,
+      //     extendTime: extendTime,
+      //     riseSeconds: riseSeconds,
+      //     dummpSeconds: dummpSeconds,
+      //     ExtendTimeVisibility: false,
+      //     isPlaying: false,
+      //   })
+      // );
     }
   }, [isPlaying]);
+  // useEffect(() => {
+  //   console.log(taskTimer, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+  // }, [taskTimer]);
+  // useEffect(()=>{
+  //   if (taskTimer?.isPlaying) {
+  //     console.log(taskTimer, "taskTimer,taskTimer,taskTimers");
+  //     setdefaultColor(taskTimer.defaultColor);
+  //     setExtendTime(taskTimer.extendTime);
+  //     setRiseTime(taskTimer.riseSeconds);
+  //     setdummpSeconds(taskTimer.dummpSeconds);
+  //     console.log('isplaying 236')
+  //     setisPlaying(taskTimer.isPlaying);
+  //     if (taskTimer.ExtendTimeVisibility) {
+  //       dispatch(
+  //         setTaskTimer({
+  //           ...taskTimer,
+  //           ExtendTimeVisibility: false,
+  //         })
+  //       );
+  //       setExtendTimeVisibility(false);
+  //     }
+  //     // setGetTime(!getTime);
+  //   }
+  // },[])
   useEffect(() => {
-    if (taskTimer?.isPlaying && getTime && isPlaying) {
-      console.log(taskTimer, "taskTimer,taskTimer,taskTimers");
+    setGetTime(true);
+    if (taskTimer?.isPlaying) {
+      setisPlaying(true);
+    }
+  }, []);
+  useEffect(() => {
+    // setGetTime(true);
+    if (taskTimer) {
+      console.log(taskTimer);
+    }
+  }, [taskTimer]);
+  useEffect(() => {
+    // console.log(taskTimer?.isPlaying, getTime, isPlaying, "CHECKKK REDUCCC");
+    // && getTime && isPlaying
+    if (
+      taskTimer?.isPlaying &&
+      taskTimer?.isPlaying !== undefined &&
+      getTime &&
+      isPlaying
+    ) {
+      console.log(
+        taskTimer,
+        isPlaying,
+        "taskTimer,taskTimer,taskTimersFFFFFFFFFFFFFFF232223"
+      );
       setdefaultColor(taskTimer.defaultColor);
       setExtendTime(taskTimer.extendTime);
       setRiseTime(taskTimer.riseSeconds);
       setdummpSeconds(taskTimer.dummpSeconds);
-      setisPlaying(taskTimer.isPlaying);
+      // console.log("isplaying 236");
+      // setisPlaying(taskTimer.isPlaying);
       if (taskTimer.ExtendTimeVisibility) {
         dispatch(
           setTaskTimer({
@@ -242,7 +294,11 @@ const Tasks = (props) => {
         );
         setExtendTimeVisibility(false);
       }
+      // setGetTime(!getTime);
     }
+    // else{
+    //   setisPlaying(taskTimer.isPlaying);
+    // }
   }, [taskTimer, getTime, isPlaying]);
   // useEffect(() => {
   //   const timer = _BackgroundTimer.setInterval(() => {
@@ -327,6 +383,7 @@ const Tasks = (props) => {
     setExtendTime(0);
     setRiseTime(0);
     setCount(-1);
+    console.log("isplaying 332");
     setisPlaying(false);
     let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
     list?.map(async (ele, index) => {
@@ -461,8 +518,16 @@ const Tasks = (props) => {
       });
     }
     // console.log(currentOnGoingTask, "currentOnGoingTask");
+    // if (isPlaying) {
+    dispatch(
+      setTaskTimer({
+        ...taskTimer,
+        isPlaying: !isPlaying,
+      })
+    );
     if (tSeconds !== dummpSeconds) {
       setTaskStartTime(false);
+      console.log("isplaying 469");
       setisPlaying(!isPlaying);
       if (dummpSeconds === 0) {
         setdefaultColor(colors.gray600);
@@ -494,6 +559,7 @@ const Tasks = (props) => {
 
         setallTaskList(allList);
         calculateTotalTime(allList);
+        console.log("isplaying 501");
         setisPlaying(!isPlaying);
         setTaskStartTime(false);
       });
@@ -1082,11 +1148,26 @@ const Tasks = (props) => {
             </View>
           )}
           <TouchableOpacity
-            onPress={() =>
-              currentOnGoingTask.status === "incomplete"
-                ? setStartTime(moment().format("hh:mma"))
-                : toastServices.showToast("No task available")
-            }
+            onPress={() => {
+              if (currentOnGoingTask.status === "incomplete") {
+                if (isPlaying) {
+                  console.log("dispatchkskskskskTimerFn");
+                  dispatch(
+                    taskTimerFn(currentOnGoingTask, {
+                      defaultColor: currentOnGoingTask?.color,
+                      extendTime: taskTimer.extendTime,
+                      riseSeconds: taskTimer.riseSeconds,
+                      dummpSeconds: taskTimer.dummpSeconds,
+                      ExtendTimeVisibility: false,
+                      isPlaying: false,
+                    })
+                  );
+                }
+                setStartTime(moment().format("hh:mma"));
+              } else {
+                toastServices.showToast("No task available");
+              }
+            }}
             style={styles.playPauseButtonContainer}
           >
             {isPlaying ? (
