@@ -53,6 +53,7 @@ const AddTask = (props) => {
         ...obj,
         duration: duration,
         durationRemaining: { ...duration, seconds: 0 },
+        durationTime: 0,
         startTimer: false,
         taskName: taskName.trim(),
         color: color,

@@ -83,6 +83,7 @@ const Tasks = (props) => {
   });
   const [isPlaying, setisPlaying] = useState(false);
   const [loader, setLoader] = useState(true);
+  const [PieChart, setPieChart] = useState(0);
   const [scheduleTotalTime, setscheduleTotalTime] = useState("");
   const [totalDuration, setTotalDuration] = useState(1);
   const [defaultColor, setdefaultColor] = useState(colors.gray600);
@@ -110,11 +111,28 @@ const Tasks = (props) => {
   //   }
   // }, []);
   useEffect(() => {
+    // console.log(riseSeconds / totalDuration, "riseSeconds-----");
+    // console.log(Math.trunc(riseSeconds % 60));
+    // console.log();
+    // if ((riseSeconds / totalDuration) !== PieChart) {
+    if (currentOnGoingTask?.durationRemaining?.extraTime === false) {
+      setPieChart(riseSeconds / totalDuration);
+    } else {
+      setPieChart(0);
+    }
+    // }
+  }, [riseSeconds, totalDuration]);
+  useEffect(() => {
     const timer = BackgroundTimer.setInterval(() => {
       if (isPlaying && currentOnGoingTask.status === "incomplete") {
         if (extendTime > 0) {
+          if (totalDuration !== 0 && riseSeconds !== 0) {
+            setTotalDuration(0);
+            setRiseTime(0);
+          }
           // console.log(extendTime, "extendTime");
-          let val = setExtendTime(extendTime + 1);
+          setExtendTime(extendTime + 1);
+          // setRiseTime(riseSeconds + 1);
           setdefaultColor(colors.gray600);
           if (extendTime % 300 === 0) {
             // console.log(extendTime);
@@ -130,13 +148,12 @@ const Tasks = (props) => {
               } have been passed for ${currentOnGoingTask?.taskName}`,
               body: "don't forget to check your routine",
             };
-
+            // setRiseTime(0);
             // Send the notification
             Notifications.postLocalNotification(notification);
-
             NotificationSounds.getNotifications("notification").then(
               (soundsList) => {
-                console.log("SOUNDS", JSON.stringify(soundsList));
+                // console.log("SOUNDS", JSON.stringify(soundsList));
                 if (soundsList.length !== 0) {
                   playSampleSound(soundsList[1]);
                 } else {
@@ -171,7 +188,6 @@ const Tasks = (props) => {
                   // stopSampleSound();
                 }
               );
-
               setExtendTimeVisibility(true);
               {
                 count === -1 && setExtendTime(1);
@@ -189,7 +205,9 @@ const Tasks = (props) => {
   useEffect(() => {
     firestore().collection("tasks").onSnapshot(onResult);
   }, []);
-
+  // useEffect(() => {
+  //   console.log(allTaskList, "allTaskList");
+  // }, [allTaskList]);
   useEffect(() => {
     //calculateTotalTime();
     setTimeout(() => {
@@ -201,7 +219,7 @@ const Tasks = (props) => {
     setExtendTime(0);
     setRiseTime(0);
     setCount(-1);
-    console.log("isplaying 332");
+    // console.log("isplaying 332");
     setisPlaying(false);
     let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
     if (!list?.length) {
@@ -294,9 +312,10 @@ const Tasks = (props) => {
   };
   async function onResult(QuerySnapshot) {
     let changes = QuerySnapshot.docChanges();
-    changes.forEach((element) => {
-      getTasks();
-    });
+    // changes.forEach((element) => {
+    // console.log(element,"element");
+    getTasks();
+    // });
   }
   const getMinutes = (time) => {
     return Math.trunc(time / 3600) * 60 - Math.trunc(time / 60) > 9
@@ -309,6 +328,8 @@ const Tasks = (props) => {
   };
   const saveToFirebase = async () => {
     if (isPlaying) {
+      let date = new Date();
+      console.log(date, "date");
       await appFBS.updateData(currentOnGoingTask.id, "tasks", {
         startTimer: isPlaying,
         durationRemaining: {
@@ -325,7 +346,19 @@ const Tasks = (props) => {
               : Math.trunc(dummpSeconds % 60),
           extraTime: extendTime > 0 ? true : false,
         },
+        durationTime: JSON.stringify(date),
       });
+      console.log(moment(), "DddddDDDDDDddddd");
+    }
+  };
+  const saveFb = async () => {
+    if (isPlaying) {
+      let date = new Date();
+      console.log(date, "date");
+      await appFBS.updateData(currentOnGoingTask.id, "tasks", {
+        durationTime: JSON.stringify(date),
+      });
+      console.log(moment(), "DddddDDDDDDddddd");
     }
   };
   const setStartTime = async () => {
@@ -339,10 +372,12 @@ const Tasks = (props) => {
     if (!isPlaying) {
       await appFBS.updateData(currentOnGoingTask.id, "tasks", {
         startTimer: !isPlaying,
+        durationTime: 0,
       });
     } else {
       await appFBS.updateData(currentOnGoingTask.id, "tasks", {
         startTimer: !isPlaying,
+        durationTime: 0,
         durationRemaining: {
           totalDuration: currentOnGoingTask?.durationRemaining?.totalDuration,
           hours:
@@ -356,6 +391,7 @@ const Tasks = (props) => {
               ? Math.trunc(extendTime % 60)
               : Math.trunc(dummpSeconds % 60),
           extraTime: extendTime > 0 ? true : false,
+          durationTime: 0,
         },
       });
     }
@@ -369,7 +405,7 @@ const Tasks = (props) => {
     // );
     if (tSeconds !== dummpSeconds) {
       setTaskStartTime(false);
-      console.log("isplaying 469");
+      // console.log("isplaying 469");
       setisPlaying(!isPlaying);
       if (dummpSeconds === 0) {
         setdefaultColor(colors.gray600);
@@ -401,12 +437,13 @@ const Tasks = (props) => {
 
         setallTaskList(allList);
         calculateTotalTime(allList);
-        console.log("isplaying 501");
+        // console.log("isplaying 501");
         setisPlaying(!isPlaying);
         setTaskStartTime(false);
       });
     }
   };
+
   const getTasks = async (addStartTime, time) => {
     let list = await appFBS.getData("tasks", true, "scheduleId", "==", data.id);
     // let start_time = data?.time;
@@ -439,12 +476,61 @@ const Tasks = (props) => {
             )
             .format("hh:mm A");
         }
+        let remainingSeconds = 0;
+        console.log(ele, "ELELE");
+        // console.log(ele?.durationRemaining, "durationRemaining?.durationTime");
+        console.log(ele?.durationTime, "durationTime.durationTime");
+        console.log(
+          typeof ele?.durationTime === "string",
+          "durationTime.durationTimestrr"
+        );
+        if (typeof ele?.durationTime === "string") {
+          console.log("hjhjhj");
+          var date = JSON.parse(ele?.durationTime);
+          var startDate = new Date(date);
+          // // // Do your operations
+          var endDate = new Date();
+          console.log(startDate, "startDate");
+          console.log(endDate, "endDate");
+          remainingSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
+          console.log(remainingSeconds);
+          saveFb();
+          //intitial time 8
+          // let x = ele?.durationRemaining?.durationTime;
+          // let x = moment.now();
+          // console.log(now * 3600);
+          // var x = ele?.durationRemaining?.durationTime;
+          // console.log(x, "xXXXXXXXXXXXXXXXXXXXXXX");
+          // var y = new moment();
+          // console.log(y, "y");
+          // var duration = moment.duration(x.diff(y));
+          // console.log(duration,"duration-duration-duration-duration-duration");
+          // let rem = now - seconds;
+          // console.log(rem);
+          // remainingSeconds = rem * 3600 + getMinutes(rem) + (rem % 60);
+          // console.log(rem, "rem-------rem");
+          // console.log(remainingSeconds, "remremrem");
+        }
+        // let addSeconds = seconds - remainingSeconds;
+        // console.log(remainingSeconds, seconds, "AAADDDDDDDDDD SECONDS");
+        // console.log(prevSeconds, "fffffff");
 
-        let totalSeconds =
+        let newSeconds =
           ele?.durationRemaining?.hours * 3600 +
           ele?.durationRemaining?.minutes * 60 +
           (ele?.durationRemaining?.seconds % 60);
-        obj = { ...ele, startTime: start_time, totalSeconds: totalSeconds };
+        console.log(remainingSeconds, "remainingSeconds");
+        let totalSeconds = ele?.durationRemaining?.extraTime
+          ? newSeconds + Number(remainingSeconds.toFixed(0))
+          : newSeconds - Number(remainingSeconds.toFixed(0));
+        // console.log(totalSecondsnew, "totalSecondsnew-totalSecondsnew");
+        // let totalSeconds = newSeconds - Number(remainingSeconds.toFixed(0));
+        obj = {
+          ...ele,
+          startTime: start_time,
+          totalSeconds: totalSeconds,
+          extraTime: ele?.durationRemaining?.extraTime,
+        };
         incompleteList.push(obj);
         allList.push(obj);
       } else {
@@ -454,11 +540,21 @@ const Tasks = (props) => {
     });
     const sorted = allList.sort((a, b) => (a.status > b.status ? -1 : 1));
     if (sorted !== undefined && sorted.length > 0) {
-      const { totalSeconds } = sorted[0];
+      const { totalSeconds, extraTime } = sorted[0];
       // console.log("checking", sorted);
       if (totalSeconds !== undefined) {
-        setdummpSeconds(totalSeconds);
-        setTotalDuration(totalSeconds);
+        if (totalSeconds < 0) {
+          // console.log(totalSeconds.split("-"), "totalSeconds.split(-)");
+          let time = JSON.stringify(totalSeconds).split("-");
+          setExtendTime(JSON.parse(time[1]));
+          setTotalDuration(1500);
+        } else if (extraTime) {
+          setExtendTime(Number(totalSeconds));
+          // setTotalDuration(1500);
+        } else {
+          setdummpSeconds(Number(totalSeconds));
+          // setTotalDuration(totalSeconds);
+        }
       }
       setallTaskList(sorted);
       calculateTotalTime(sorted);
@@ -548,6 +644,7 @@ const Tasks = (props) => {
     if (prevOpenedRow && prevOpenedRow !== row[index]) {
       prevOpenedRow.close();
     }
+    // getTasks()
     prevOpenedRow = row[index];
   };
 
@@ -561,14 +658,15 @@ const Tasks = (props) => {
         if (item?.startTimer) {
           setisPlaying(item?.startTimer);
         }
-        let totalSeconds =
-          item?.duration?.hours * 3600 + item?.duration?.minutes * 60;
-        setTotalDuration(totalSeconds);
-        let totalSeconds2 =
-          item?.durationRemaining?.hours * 3600 +
-          item?.durationRemaining?.minutes * 60 +
-          (item?.durationRemaining?.seconds % 60);
-        setRiseTime(totalSeconds - totalSeconds2);
+        setTotalDuration(0);
+        setRiseTime(0);
+        // let totalSeconds = 1500;
+        // setTotalDuration(totalSeconds);
+        // let totalSeconds2 =
+        //   item?.durationRemaining?.hours * 3600 +
+        //   item?.durationRemaining?.minutes * 60 +
+        //   (item?.durationRemaining?.seconds % 60);
+        // setRiseTime(totalSeconds - totalSeconds2);
         setLoader(false);
       } else {
         if (index == 0) {
@@ -585,6 +683,7 @@ const Tasks = (props) => {
             item?.durationRemaining?.minutes * 60 +
             (item?.durationRemaining?.seconds % 60);
           setRiseTime(totalSeconds - totalSeconds2);
+          // console.log(totalSeconds2, "totalSeconds2");
           // console.log(totalSeconds - totalSeconds2,"totalSeconds - totalSeconds2");
           setLoader(false);
           now = moment();
@@ -962,7 +1061,7 @@ const Tasks = (props) => {
         {dummpSeconds === undefined ? null : (
           <Progress.Pie
             color={defaultColor}
-            progress={riseSeconds / totalDuration}
+            progress={PieChart}
             size={responsiveWidth(54)}
           />
         )}
