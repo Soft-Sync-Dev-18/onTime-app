@@ -8,6 +8,8 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  AppState,
+  BackHandler,
 } from "react-native";
 import styles from "./tasks.styles";
 import DraggableFlatList from "react-native-draggable-flatlist";
@@ -35,11 +37,11 @@ import LastTask from "../../../components/modals/lastTask/lastTask";
 import MoveToNewTask from "../../../components/modals/moveToNewTask/moveToNewTask";
 import OvertimeTask from "../../../components/modals/moveToNewTask/overtimeTask";
 import ResetConfirmation from "../../../components/modals/deleteConfirmation/resetConfirmation";
-import { HeadlessJsTask } from "react-native-background-fetch";
 import { Notifications } from "react-native-notifications";
 import { useSelector, useDispatch } from "react-redux";
 import _BackgroundTimer from "react-native-background-timer";
-import { setTaskTimer, taskTimerFn } from "../../../store/actions";
+import BackgroundFn from "../../../navigation/background";
+// import { setTaskTimer, taskTimerFn } from "../../../store/actions";
 const NUM_ITEMS = 10;
 
 function getColor(i: number) {
@@ -70,6 +72,7 @@ const Tasks = (props) => {
   const itemRefs = useRef(new Map());
   const [data, setData] = useState(data1);
   const [selectedId, setSelectedId] = useState(null);
+  const [durationTime, setDurationTime] = useState(0);
   const [visiblity, setVisiblity] = useState(false);
   const [count, setCount] = useState(-1);
   const [allTaskList, setallTaskList] = useState([]);
@@ -101,34 +104,86 @@ const Tasks = (props) => {
   const [moveToNextTaskVisibility, setmoveToNextTaskVisibility] =
     useState(false);
   const [extendTimeVisibility, setExtendTimeVisibility] = useState(false);
-  // const taskTimer = useSelector((state) => state?.state?.taskTimer);
-  // useEffect(() => {
-  //   if (currentOnGoingTask.status === "incomplete") {
-  //     if (currentOnGoingTask?.startTimer) {
-  //       // setStartTime()
-  //       setisPlaying(currentOnGoingTask?.startTimer);
-  //     }
-  //   }
-  // }, []);
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
+
   useEffect(() => {
-    // console.log(riseSeconds / totalDuration, "riseSeconds-----");
-    // console.log(Math.trunc(riseSeconds % 60));
-    // console.log();
-    // if ((riseSeconds / totalDuration) !== PieChart) {
-    if (currentOnGoingTask?.durationRemaining?.extraTime === false) {
-      setPieChart(riseSeconds / totalDuration);
-    } else {
-      setPieChart(0);
-    }
-    // }
+    let current = currentOnGoingTask;
+    let dummySeconds = dummpSeconds;
+    let extendedTime = extendTime;
+    let date = new Date();
+    let num = 0;
+    console.log(currentOnGoingTask?.startTimer, "isPlaying-isPlaying");
+    const subscription = AppState.addEventListener(
+      "change",
+      async (nextAppState) => {
+        // console.log(nextAppState, "nextAppState-nextAppState-nextAppState");
+        if (appState.current.match(/inactive|background/)) {
+          console.log(currentOnGoingTask, "currentOnGoingTask");
+          if (currentOnGoingTask?.startTimer) {
+            console.log(date, "date");
+            await appFBS.updateData(current.id, "tasks", {
+              startTimer: isPlaying,
+              durationRemaining: {
+                totalDuration: current?.durationRemaining?.totalDuration,
+                hours:
+                  extendTime > 0
+                    ? Math.trunc(extendedTime / 3600)
+                    : Math.trunc(dummySeconds / 3600),
+                minutes:
+                  extendedTime > 0
+                    ? getMinutes(extendedTime)
+                    : getMinutes(dummySeconds),
+                seconds:
+                  extendedTime > 0
+                    ? Math.trunc(extendedTime % 60)
+                    : Math.trunc(dummySeconds % 60),
+                extraTime: extendedTime > 0 ? true : false,
+              },
+              durationTime: JSON.stringify(date),
+            });
+            console.log(moment(), "DddddDDDDDDddddd");
+          }
+          console.log("App has come to the background!");
+        } else if (
+          appState.current.match(/inactive|background/) &&
+          nextAppState === "active"
+        ) {
+          console.log("App has come to the foreground!");
+        }
+        appState.current = nextAppState;
+        setAppStateVisible(appState.current);
+        console.log(appState.current, "appState.current");
+        if (appState.current === "background") {
+        }
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appStateVisible]);
+  const handleBackButton = () => {
+    console.log("Back button pressed");
+    saveToFirebase();
+  };
+
+  useEffect(() => {
+    BackHandler.addEventListener("hardwareBackPress", handleBackButton);
+  }, []);
+  useEffect(() => {
+    setPieChart(riseSeconds / totalDuration);
   }, [riseSeconds, totalDuration]);
+  // useEffect(() => {
+  //   setDurationTime(durationTime - 1);
+  // }, [dummpSeconds]);
   useEffect(() => {
     const timer = BackgroundTimer.setInterval(() => {
       if (isPlaying && currentOnGoingTask.status === "incomplete") {
         if (extendTime > 0) {
           if (totalDuration !== 0 && riseSeconds !== 0) {
-            setTotalDuration(0);
-            setRiseTime(0);
+            // setTotalDuration(0);
+            // setRiseTime(0);
           }
           // console.log(extendTime, "extendTime");
           setExtendTime(extendTime + 1);
@@ -169,6 +224,7 @@ const Tasks = (props) => {
         } else {
           if (dummpSeconds !== undefined) {
             setdummpSeconds(dummpSeconds - 1);
+            setDurationTime(durationTime - 1);
             setRiseTime(riseSeconds + 1);
             if (dummpSeconds === 1) {
               const notification = {
@@ -205,9 +261,6 @@ const Tasks = (props) => {
   useEffect(() => {
     firestore().collection("tasks").onSnapshot(onResult);
   }, []);
-  // useEffect(() => {
-  //   console.log(allTaskList, "allTaskList");
-  // }, [allTaskList]);
   useEffect(() => {
     //calculateTotalTime();
     setTimeout(() => {
@@ -246,10 +299,15 @@ const Tasks = (props) => {
       if (ele.status == "incomplete") {
         let obj = {};
         start_time = moment(start_time, "HH:mma")
-          .add(ele?.duration?.hours * 60 + ele?.duration?.minutes, "minute")
+          .add(
+            ele?.durationRemaining?.hours * 60 +
+              ele?.durationRemaining?.minutes,
+            "minute"
+          )
           .format("hh:mm A");
         let totalSeconds =
-          ele?.duration?.hours * 3600 + ele?.duration?.minutes * 60;
+          ele?.durationRemaining?.hours * 3600 +
+          ele?.durationRemaining?.minutes * 60;
         obj = { ...ele, startTime: start_time, totalSeconds: totalSeconds };
         allList.push(obj);
       } else {
@@ -280,30 +338,44 @@ const Tasks = (props) => {
     // setResetModal(false);
   };
 
-  const calculateTotalTime = async (allTaskList) => {
+  const calculateTotalTime = async (allTaskList, remainingSeconds) => {
     let hour = 0;
     let minut = 0;
+    let seconds = 0;
     allTaskList.map((item) => {
       if (item?.status === "incomplete") {
-        hour = hour + item?.duration?.hours;
-      }
-    });
-    allTaskList.map((item) => {
-      if (item?.status === "incomplete") {
-        minut = minut + item?.duration?.minutes;
-        if (minut >= 60) {
-          minut = minut - 60;
-          hour = hour + 1;
+        if (!item?.durationRemaining?.extraTime) {
+          hour = hour + item?.durationRemaining?.hours;
         }
       }
     });
-
+    allTaskList.map((item, index) => {
+      if (item?.status === "incomplete") {
+        if (!item?.durationRemaining?.extraTime) {
+          minut = minut + item?.durationRemaining?.minutes;
+          console.log(index, "index");
+          if (index === 0) {
+            seconds = item?.durationRemaining?.seconds;
+          }
+          if (minut >= 60) {
+            minut = minut - 60;
+            hour = hour + 1;
+          }
+        }
+      }
+    });
+    let newSeconds = hour * 3600 + minut * 60 + (seconds % 60);
+    setDurationTime(Number(newSeconds - remainingSeconds));
+    // if (seconds > 0) {
+    //   setscheduleTotalTime(minut + "m" + ":" + seconds + "s");
+    // } else
     if (hour == 0 && minut == 0) {
       setscheduleTotalTime(0);
     } else if (hour > 0 && minut > 0) {
       setscheduleTotalTime(hour + "h:" + minut + "m");
     } else if (hour == 0 && minut > 0) {
-      setscheduleTotalTime("0h" + ":" + minut + "m");
+      setscheduleTotalTime(minut + "m");
+      // setscheduleTotalTime(minut + "m" + ":" + seconds + "s");
     } else if (hour > 0 && minut == 0) {
       setscheduleTotalTime(hour + "h:" + "00m");
     }
@@ -327,6 +399,7 @@ const Tasks = (props) => {
       : Math.trunc(time / 60);
   };
   const saveToFirebase = async () => {
+    console.log("saveToFirebase/saveToFirebase");
     if (isPlaying) {
       let date = new Date();
       console.log(date, "date");
@@ -348,7 +421,6 @@ const Tasks = (props) => {
         },
         durationTime: JSON.stringify(date),
       });
-      console.log(moment(), "DddddDDDDDDddddd");
     }
   };
   const saveFb = async () => {
@@ -530,6 +602,7 @@ const Tasks = (props) => {
           startTime: start_time,
           totalSeconds: totalSeconds,
           extraTime: ele?.durationRemaining?.extraTime,
+          remainingSeconds: remainingSeconds.toFixed(0),
         };
         incompleteList.push(obj);
         allList.push(obj);
@@ -540,24 +613,24 @@ const Tasks = (props) => {
     });
     const sorted = allList.sort((a, b) => (a.status > b.status ? -1 : 1));
     if (sorted !== undefined && sorted.length > 0) {
-      const { totalSeconds, extraTime } = sorted[0];
+      const { totalSeconds, extraTime, remainingSeconds } = sorted[0];
       // console.log("checking", sorted);
       if (totalSeconds !== undefined) {
         if (totalSeconds < 0) {
           // console.log(totalSeconds.split("-"), "totalSeconds.split(-)");
           let time = JSON.stringify(totalSeconds).split("-");
           setExtendTime(JSON.parse(time[1]));
-          setTotalDuration(1500);
         } else if (extraTime) {
           setExtendTime(Number(totalSeconds));
           // setTotalDuration(1500);
         } else {
           setdummpSeconds(Number(totalSeconds));
-          // setTotalDuration(totalSeconds);
+          // setDurationTime(durationTime - Number(remainingSeconds));
         }
+        // setTotalDuration(totalSeconds);
       }
       setallTaskList(sorted);
-      calculateTotalTime(sorted);
+      calculateTotalTime(sorted, remainingSeconds);
     }
     // setnextTaskmodalValues({
     //   ...nextTaskmodalValues,
@@ -658,8 +731,8 @@ const Tasks = (props) => {
         if (item?.startTimer) {
           setisPlaying(item?.startTimer);
         }
-        setTotalDuration(0);
-        setRiseTime(0);
+        // setTotalDuration(0);
+        // setRiseTime(0);
         // let totalSeconds = 1500;
         // setTotalDuration(totalSeconds);
         // let totalSeconds2 =
@@ -690,7 +763,17 @@ const Tasks = (props) => {
           //  console.log('timeee', +',,,'+now.format("m"))
         }
       }
-
+      // console.log(item, "item?.startTime");
+      // console.log(
+      //   moment(moment(), "hh:mm a")
+      //     .add(
+      //       item?.durationRemaining?.hours * 60 +
+      //         item?.durationRemaining?.minutes,
+      //       "minute"
+      //     )
+      //     .format("hh:mm A"),
+      //   "item?.startTime"
+      // );
       return item.status === "completed" ? (
         <View>
           <TouchableOpacity
@@ -765,7 +848,7 @@ const Tasks = (props) => {
                     {item.taskName}
                   </Text>
                   <Text numberOfLines={1} style={styles.itemDurationText}>
-                    {item?.durationRemaining?.totalDuration}
+                    {item?.duration?.totalDuration}
                   </Text>
                 </View>
                 <Text style={styles.itemTimeText}>{item?.startTime}</Text>
@@ -778,14 +861,20 @@ const Tasks = (props) => {
                   }}
                 >
                   <Text style={styles.bottonTimerText}>
-                    Ends @ {""}
-                    {moment(item?.startTime, "hh:mm a")
-                      .add(
-                        item?.durationRemaining?.hours * 60 +
-                          item?.durationRemaining?.minutes,
-                        "minute"
-                      )
-                      .format("hh:mm A")}
+                    {
+                      // item?.durationRemaining?.extraTime
+                      //   ? "Ended"
+                      //   :
+                      "Ends @ " +
+                        moment(moment(), "hh:mm a")
+                          .add(
+                            item?.durationRemaining?.hours * 3600 +
+                              item?.durationRemaining?.minutes * 60 +
+                              (item?.durationRemaining?.seconds % 60),
+                            "seconds"
+                          )
+                          .format("hh:mm A")
+                    }
                   </Text>
                 </View>
               )}
@@ -855,13 +944,15 @@ const Tasks = (props) => {
               } else {
                 start_time = moment(start_time, "HH:mma")
                   .add(
-                    item?.duration?.hours * 60 + item?.duration?.minutes,
+                    item?.durationRemaining?.hours * 60 +
+                      item?.durationRemaining?.minutes,
                     "minute"
                   )
                   .format("hh:mm A");
               }
               let totalSeconds =
-                item?.duration?.hours * 3600 + item?.duration?.minutes * 60;
+                item?.durationRemaining?.hours * 3600 +
+                item?.durationRemaining?.minutes * 60;
               obj = {
                 ...item,
                 startTime: start_time,
@@ -893,27 +984,40 @@ const Tasks = (props) => {
   const newcalculateTotalTime = async (allTaskList) => {
     let hour = 0;
     let minut = 0;
+    let seconds = 0;
     allTaskList.map((item) => {
       if (item?.status === "incomplete") {
-        hour = hour + item?.duration?.hours;
-      }
-    });
-    allTaskList.map((item) => {
-      if (item?.status === "incomplete") {
-        minut = minut + item?.duration?.minutes;
-        if (minut >= 60) {
-          minut = minut - 60;
-          hour = hour + 1;
+        if (!item?.durationRemaining?.extraTime) {
+          hour = hour + item?.durationRemaining?.hours;
         }
       }
     });
-
+    allTaskList.map((item, index) => {
+      if (item?.status === "incomplete") {
+        if (!item?.durationRemaining?.extraTime) {
+          if (index === 1) {
+            seconds = item?.durationRemaining?.seconds;
+          }
+          minut = minut + item?.durationRemaining?.minutes;
+          if (minut >= 60) {
+            minut = minut - 60;
+            hour = hour + 1;
+          }
+        }
+      }
+    });
+    let newSeconds = hour * 3600 + minut * 60 + (seconds % 60);
+    setDurationTime(newSeconds);
+    // if (seconds > 0) {
+    //   setscheduleTotalTime(minut + "m" + ":" + seconds + "s");
+    // } else
     if (hour == 0 && minut == 0) {
       setscheduleTotalTime(0);
     } else if (hour > 0 && minut > 0) {
       setscheduleTotalTime(hour + "h:" + minut + "m");
     } else if (hour == 0 && minut > 0) {
-      setscheduleTotalTime("0h" + ":" + minut + "m");
+      // setscheduleTotalTime(minut + "m" + ":" + seconds + "s");
+      setscheduleTotalTime(minut + "m");
     } else if (hour > 0 && minut == 0) {
       setscheduleTotalTime(hour + "h:" + "00m");
     }
@@ -1022,9 +1126,6 @@ const Tasks = (props) => {
       toastServices.showToast("No previous task available");
     }
   };
-  // useEffect(() => {
-  //   console.log(getMinutes(dummpSeconds), "dummpSeconds");
-  // }, [dummpSeconds]);
   return (
     <SafeAreaView style={styles.container}>
       {allTaskList.length === 0 && visiblity === false && (
@@ -1039,15 +1140,25 @@ const Tasks = (props) => {
       )}
       <StatusBar backgroundColor={"white"} barStyle="dark-content" />
       <TaskHeader
-        duration={scheduleTotalTime ? scheduleTotalTime : "00:00"}
+        // duration={scheduleTotalTime ? scheduleTotalTime : "00:00"}
+        duration={
+          typeof durationTime === "number"
+            ? "0h:0m"
+            : durationTime <= 0
+            ? "0h:0m"
+            : `${
+                Math.trunc(durationTime / 3600) !== 0
+                  ? Math.trunc(durationTime / 3600) + "h:"
+                  : ""
+              }${getMinutes(durationTime) + "m"}${
+                ":" + Math.trunc(durationTime % 60) + "s"
+              }`
+        }
         endTime={
-          totalDuration == 0
+          durationTime <= 0
             ? "00:00"
-            : moment(
-                `${data.startHour}:${data.startMin} ${data.AMPM}`,
-                "hh:mm a"
-              )
-                .add(hoursAndMinutes, "minute")
+            : moment(moment(), "hh:mm a")
+                .add(durationTime, "seconds")
                 .format("hh:mm A")
         }
         title={data?.name}
@@ -1061,7 +1172,7 @@ const Tasks = (props) => {
         {dummpSeconds === undefined ? null : (
           <Progress.Pie
             color={defaultColor}
-            progress={PieChart}
+            progress={extendTime > 0 ? 0 : PieChart}
             size={responsiveWidth(54)}
           />
         )}

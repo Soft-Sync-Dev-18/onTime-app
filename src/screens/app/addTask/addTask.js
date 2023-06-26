@@ -165,6 +165,7 @@ const AddTask = (props) => {
               setColor(fromHsv(e));
               setselectedColor(fromHsv(e));
             }}
+            // color={'#ffffff'}
             hideSliders
             onColorSelected={(e) => {
               setColor(e), setselectedColor(e);

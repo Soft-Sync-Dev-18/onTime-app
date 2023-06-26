@@ -40,12 +40,12 @@ const OvertimeTask = ({
         <Image style={styles.icon} source={appImages.clockImage} />
         {NextTaskName === "finished" ? (
           <Text style={styles.heading}>
-            {CurrentTaskName} is over. {"\n"} No further task available
+            Time up! {"\n"} Tap Done to finish task
+            {/* No further task available */}
           </Text>
         ) : (
           <Text style={styles.heading}>
-            Time up!  {"\n"} Tap Mark Done to move on to {" "}
-            {NextTaskName}
+            Time up! {"\n"} Tap Done to move on to {NextTaskName}
           </Text>
         )}
       </TouchableOpacity>

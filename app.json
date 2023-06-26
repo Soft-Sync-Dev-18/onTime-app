@@ -1,4 +1,11 @@
 {
   "name": "on_Time",
-  "displayName": "on_Time"
+  "displayName": "on_Time",
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    }
+  }
 }
