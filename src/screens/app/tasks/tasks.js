@@ -73,6 +73,7 @@ const Tasks = (props) => {
   const [data, setData] = useState(data1);
   const [selectedId, setSelectedId] = useState(null);
   const [durationTime, setDurationTime] = useState(0);
+  const [activeTaskDurationTime, setActiveTaskDurationTime] = useState(0);
   const [visiblity, setVisiblity] = useState(false);
   const [count, setCount] = useState(-1);
   const [allTaskList, setallTaskList] = useState([]);
@@ -365,7 +366,7 @@ const Tasks = (props) => {
       }
     });
     let newSeconds = hour * 3600 + minut * 60 + (seconds % 60);
-    setDurationTime(Number(newSeconds - remainingSeconds));
+    setDurationTime(Number(newSeconds) - Number(remainingSeconds));
     // if (seconds > 0) {
     //   setscheduleTotalTime(minut + "m" + ":" + seconds + "s");
     // } else
@@ -727,6 +728,11 @@ const Tasks = (props) => {
       if (extendTime > 0) {
         setCount(0);
         setdefaultColor(colors.gray600);
+        let hour = item?.durationRemaining?.hours;
+        let minut = item?.durationRemaining?.minutes;
+        let seconds = item?.durationRemaining?.seconds;
+        let newSeconds = hour * 3600 + minut * 60 + (seconds % 60);
+        setActiveTaskDurationTime(Number(newSeconds) - Number(remainingSeconds));
         setcurrentOnGoingTask(item);
         if (item?.startTimer) {
           setisPlaying(item?.startTimer);
@@ -1143,16 +1149,18 @@ const Tasks = (props) => {
         // duration={scheduleTotalTime ? scheduleTotalTime : "00:00"}
         duration={
           typeof durationTime === "number"
-            ? "0h:0m"
-            : durationTime <= 0
-            ? "0h:0m"
-            : `${
-                Math.trunc(durationTime / 3600) !== 0
-                  ? Math.trunc(durationTime / 3600) + "h:"
-                  : ""
-              }${getMinutes(durationTime) + "m"}${
-                ":" + Math.trunc(durationTime % 60) + "s"
-              }`
+            ? durationTime <= 0
+              ? "0h:0m"
+              : `${
+                  Math.trunc(durationTime / 3600) !== 0
+                    ? Math.trunc(durationTime / 3600) + "h:"
+                    : ""
+                }${getMinutes(durationTime) + "m"}${
+                  Math.trunc(durationTime / 3600) === 0
+                    ? ":" + Math.trunc(durationTime % 60) + "s"
+                    : ""
+                }`
+            : "0h:0m"
         }
         endTime={
           durationTime <= 0
@@ -1173,7 +1181,7 @@ const Tasks = (props) => {
           <Progress.Pie
             color={defaultColor}
             progress={extendTime > 0 ? 0 : PieChart}
-            size={responsiveWidth(54)}
+            size={262}
           />
         )}
 
@@ -1191,7 +1199,7 @@ const Tasks = (props) => {
                   getMinutes(extendTime) > 9
                     ? getMinutes(extendTime)
                     : "0" + getMinutes(extendTime)
-                }:`}
+                }.`}
               </Text>
               <Text style={[styles.couterTimeRedText, { fontWeight: "400" }]}>
                 {Math.trunc(extendTime % 60) > 9
@@ -1218,7 +1226,7 @@ const Tasks = (props) => {
                       getMinutes(dummpSeconds) > 9
                         ? getMinutes(dummpSeconds)
                         : "0" + getMinutes(dummpSeconds)
-                    }:`}
+                    }.`}
                   </Text>
                   <Text style={[styles.couterTimeText, { fontWeight: "400" }]}>
                     {/* {currentOnGoingTask !== undefined && setcurrentOnGoingTask(allTaskList[0]) } */}

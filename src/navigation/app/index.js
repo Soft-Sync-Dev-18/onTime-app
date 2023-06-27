@@ -9,13 +9,13 @@ import {
 } from "../../screens/app";
 import { responsiveHeight } from "react-native-responsive-dimensions";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import BackgroundFetchScreen from "../background";
 const HomeStack = createNativeStackNavigator();
 
 const App = () => {
+
   return (
     <HomeStack.Navigator
       screenOptions={{ headerShown: false, gestureEnabled: false }}
@@ -23,8 +23,8 @@ const App = () => {
       initialRouteName={"Home"}
     >
       <HomeStack.Screen name={"Home"} component={Home} />
-      {/* <HomeStack.Screen name={'Tasks'} component={Tasks} /> */}
-      <HomeStack.Screen name={"Tasks"} component={BackgroundFetchScreen} />
+      <HomeStack.Screen name={'Tasks'} component={Tasks} />
+      {/* <HomeStack.Screen name={"Tasks"} component={BackgroundFetchScreen} /> */}
       <HomeStack.Screen name={"Setting"} component={Setting} />
       <HomeStack.Screen name={"AddTask"} component={AddTask} />
       <HomeStack.Screen name={"AddSchedule"} component={AddSchedule} />

@@ -20,6 +20,7 @@ import { appImages, colors } from "../../../globals/utilities";
 import toastServices from "../../../services/toastServices/toast.services";
 import DropDown from "../../../components/modals/dropdown/dropdown";
 import { appFBS } from "../../../services/firebaseServices/firebaseServices";
+import ColorPickerComponnt from "../colorPickerComponnt/colorPickerComponnt";
 const AddTask = (props) => {
   var data = props?.route?.params?.data;
   const [colorModal, setcolorModal] = useState(false);
@@ -160,7 +161,7 @@ const AddTask = (props) => {
       <ReactNativeModal style={{ margin: 0 }} isVisible={colorModal}>
         <View style={styles.colorModalContainer}>
           <Text style={styles.colorModalHeadingText}>Select Color</Text>
-          <ColorPicker
+          {/* <ColorPicker
             onColorChange={(e) => {
               setColor(fromHsv(e));
               setselectedColor(fromHsv(e));
@@ -171,7 +172,15 @@ const AddTask = (props) => {
               setColor(e), setselectedColor(e);
             }}
             style={styles.colorPicker}
-          />
+          /> */}
+          <View style={styles.colorPicker}>
+            <ColorPickerComponnt
+              setColor={setColor}
+              color={color}
+              selectedColor={selectedColor}
+              setselectedColor={setselectedColor}
+            />
+          </View>
           <TouchableOpacity
             onPress={() => {
               setcolorModal(false);

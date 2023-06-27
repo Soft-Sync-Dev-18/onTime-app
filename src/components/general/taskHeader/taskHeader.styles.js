@@ -62,6 +62,7 @@ export default StyleSheet.create({
     fontSize: responsiveFontSize(1.8),
     textAlign: 'center',
     textAlignVertical: 'center',
+    letterSpacing: 1,
     paddingVertical: responsiveHeight(0.5),
   },
   bottomContainer: {
